@@ -17,13 +17,14 @@ GoogleSignin.configure({
   });
 
 async function onGoogleButtonPress() {
+    let idToken;
   // Check if your device supports Google Play
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
   // Get the users ID token
   const signInResult = await GoogleSignin.signIn();
 
   // Handle different response formats
-  let idToken: string | undefined;
+  
   
   if (isSuccessResponse(signInResult)) {
     // New format (v13+)
@@ -78,7 +79,7 @@ const GoogleAuth = () => {
   const getCurrentUser = async () => {
     try {
       const response = await GoogleSignin.signInSilently();
-      if (isSuccessResponse(response)) {
+      if (isSuccessResponse(response, "SignInResponse")) {
         setUser(response.data);
       } else if (isNoSavedCredentialFoundResponse(response)) {
         // user has not signed in yet, or they have revoked access

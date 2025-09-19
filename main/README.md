@@ -1,50 +1,225 @@
-# Welcome to your Expo app 👋
+# Visitor Check-In App 📱
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native app built with Expo that allows visitors to check in using Google Sign-In authentication with Firebase integration.
 
-## Get started
+## Features
 
-1. Install dependencies
+- 🔐 Google Sign-In authentication
+- 🔥 Firebase integration for user management
+- 📱 Cross-platform (iOS & Android)
+- 🎨 Modern UI with professional design
+- ⚡ Real-time authentication state management
 
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your system:
+
+### Required Software
+
+1. **Node.js** (v18 or higher)
+   - Download from [nodejs.org](https://nodejs.org/)
+   - Verify installation: `node --version`
+
+2. **npm** (comes with Node.js)
+   - Verify installation: `npm --version`
+
+3. **Expo CLI**
    ```bash
-   npm install
+   npm install -g @expo/cli
    ```
 
-2. Start the app
+4. **Git**
+   - Download from [git-scm.com](https://git-scm.com/)
+   - Verify installation: `git --version`
 
+### For Android Development
+
+5. **Android Studio**
+   - Download from [developer.android.com](https://developer.android.com/studio)
+   - Install Android SDK (API level 24 or higher)
+   - Set up Android emulator or connect physical device
+
+6. **Java Development Kit (JDK)**
+   - Install JDK 11 or higher
+   - Set `JAVA_HOME` environment variable
+
+### For iOS Development (macOS only)
+
+7. **Xcode**
+   - Download from Mac App Store
+   - Install iOS Simulator
+   - Install Xcode Command Line Tools: `xcode-select --install`
+
+8. **CocoaPods**
    ```bash
-   npx expo start
+   sudo gem install cocoapods
    ```
 
-In the output, you'll find options to open the app in a
+## Setup Instructions
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### 1. Clone the Repository
 
 ```bash
-npm run reset-project
+git clone <your-repository-url>
+cd visitor-check-in/main
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Install Dependencies
 
-## Learn more
+```bash
+npm install
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+### 3. Firebase Setup
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Create a new project or select existing project
+3. Enable Authentication and Google Sign-In provider
+4. Download configuration files:
+   - **Android**: `google-services.json` → place in `android/app/` directory
+   - **iOS**: `GoogleService-Info.plist` → place in `ios/` directory
 
-## Join the community
+### 4. Google Sign-In Configuration
 
-Join our community of developers creating universal apps.
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create OAuth 2.0 credentials:
+   - **Web Client ID**: For Firebase authentication
+   - **Android Client ID**: For Android app
+   - **iOS Client ID**: For iOS app
+3. Update `webClientId` in `src/components/auth/google-auth.tsx`:
+   ```typescript
+   GoogleSignin.configure({
+     webClientId: 'YOUR_WEB_CLIENT_ID_HERE',
+   });
+   ```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 5. Android SDK Configuration
+
+1. Set up Android SDK path in `android/local.properties`:
+   ```
+   sdk.dir=C:\\Users\\YOUR_USERNAME\\AppData\\Local\\Android\\Sdk
+   ```
+
+2. Set environment variable:
+   ```bash
+   # Windows (PowerShell)
+   $env:ANDROID_HOME = "C:\Users\YOUR_USERNAME\AppData\Local\Android\Sdk"
+   
+   # Windows (Command Prompt)
+   set ANDROID_HOME=C:\Users\YOUR_USERNAME\AppData\Local\Android\Sdk
+   
+   # macOS/Linux
+   export ANDROID_HOME=$HOME/Library/Android/sdk
+   ```
+
+### 6. Build Native Code
+
+```bash
+npx expo prebuild
+```
+
+### 7. Start Development Server
+
+```bash
+npx expo start
+```
+
+## Running the App
+
+### Android
+
+1. **Using Emulator:**
+   ```bash
+   npx expo run:android
+   ```
+
+2. **Using Physical Device:**
+   - Enable Developer Options and USB Debugging
+   - Connect device via USB
+   - Run: `npx expo run:android`
+
+### iOS (macOS only)
+
+1. **Using Simulator:**
+   ```bash
+   npx expo run:ios
+   ```
+
+2. **Using Physical Device:**
+   - Connect iOS device
+   - Trust developer certificate
+   - Run: `npx expo run:ios`
+
+### Web
+
+```bash
+npx expo start --web
+```
+
+## Project Structure
+
+```
+main/
+├── app/                    # App screens and routing
+│   ├── _layout.tsx        # Root layout
+│   └── index.tsx          # Home screen
+├── src/
+│   └── components/
+│       └── auth/
+│           └── google-auth.tsx  # Google authentication component
+├── android/               # Android native code
+├── ios/                   # iOS native code (after prebuild)
+├── assets/                # Images and static files
+├── app.json              # Expo configuration
+└── package.json          # Dependencies
+```
+
+## Key Dependencies
+
+- **@react-native-firebase/app**: Firebase core
+- **@react-native-firebase/auth**: Firebase authentication
+- **@react-native-google-signin/google-signin**: Google Sign-In
+- **expo-router**: File-based routing
+- **expo-build-properties**: Build configuration
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Android SDK not found:**
+   - Verify `ANDROID_HOME` environment variable
+   - Check `android/local.properties` file
+   - Ensure Android SDK is installed
+
+2. **Google Sign-In not working:**
+   - Verify `webClientId` is correct
+   - Check Firebase configuration files
+   - Ensure Google Sign-In is enabled in Firebase Console
+
+3. **Build errors:**
+   - Run `npx expo prebuild --clean`
+   - Clear cache: `npx expo start --clear`
+   - Delete `node_modules` and reinstall
+
+4. **iOS build issues:**
+   - Run `cd ios && pod install`
+   - Clean Xcode build folder
+   - Check iOS deployment target
+
+### Getting Help
+
+- Check [Expo Documentation](https://docs.expo.dev/)
+- Visit [Firebase Documentation](https://firebase.google.com/docs)
+- Review [Google Sign-In Documentation](https://developers.google.com/identity/sign-in/android)
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test on both platforms
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
