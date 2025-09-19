@@ -3,9 +3,6 @@
 # dependencies
 node_modules/
 
-/ios
-/android
-
 # Expo
 .expo/
 dist/
@@ -13,6 +10,7 @@ web-build/
 expo-env.d.ts
 
 # Native
+.kotlin/
 *.orig.*
 *.jks
 *.p8
@@ -39,3 +37,7 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+# generated native folders
+/ios
+/android
