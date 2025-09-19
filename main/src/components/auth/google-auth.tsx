@@ -10,28 +10,26 @@ import {
   isNoSavedCredentialFoundResponse,
   isCancelledResponse
 } from '@react-native-google-signin/google-signin';
-import { GoogleAuthProvider, getAuth, signInWithCredential, signOut as firebaseSignOut, onAuthStateChanged, User as FirebaseUser } from '@react-native-firebase/auth';
+import { GoogleAuthProvider, getAuth, signInWithCredential, signOut as firebaseSignOut, onAuthStateChanged, FirebaseAuthTypes } from '@react-native-firebase/auth';
 
-GoogleSignin.configure({
-    webClientId: '234537435099-e92anfafr71uka98e4sodaehd0ljpgjk.apps.googleusercontent.com',
-  });
+// Google Sign-In configuration will be done in useEffect
 
 async function onGoogleButtonPress() {
-    let idToken;
   // Check if your device supports Google Play
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+  
   // Get the users ID token
   const signInResult = await GoogleSignin.signIn();
 
   // Handle different response formats
-  
+  let idToken: string | undefined;
   
   if (isSuccessResponse(signInResult)) {
     // New format (v13+)
-    idToken = signInResult.data?.idToken;
+    idToken = signInResult.data?.idToken || undefined;
   } else {
     // Legacy format or direct access
-    idToken = (signInResult as any).idToken || (signInResult as any).data?.idToken;
+    idToken = (signInResult as any).idToken || (signInResult as any).data?.idToken || undefined;
   }
   
   if (!idToken) {
@@ -47,7 +45,7 @@ async function onGoogleButtonPress() {
 
 const GoogleAuth = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [isSigninInProgress, setIsSigninInProgress] = useState(false);
 
   useEffect(() => {
@@ -79,9 +77,9 @@ const GoogleAuth = () => {
   const getCurrentUser = async () => {
     try {
       const response = await GoogleSignin.signInSilently();
-      if (isSuccessResponse(response, "SignInResponse")) {
-        setUser(response.data);
-      } else if (isNoSavedCredentialFoundResponse(response)) {
+      if (isSuccessResponse(response as any)) {
+        setUser((response as any).data);
+      } else if (isNoSavedCredentialFoundResponse(response as any)) {
         // user has not signed in yet, or they have revoked access
         console.log('No saved credentials found');
       }
