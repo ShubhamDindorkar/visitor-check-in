@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,10 @@ import {
   ScrollView,
   SafeAreaView,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+// QR Scanner temporarily removed
 
 const { width } = Dimensions.get('window');
 
@@ -52,6 +54,8 @@ const VisitorDashboard: React.FC<VisitorDashboardProps> = ({
   userEmail,
   onSignOut,
 }) => {
+  // Scanner state removed
+
   const handleViewPatients = () => {
     console.log('View Patients pressed');
     // TODO: Navigate to patients list
@@ -64,7 +68,7 @@ const VisitorDashboard: React.FC<VisitorDashboardProps> = ({
 
   const handleCheckIn = () => {
     console.log('Check In pressed');
-    // TODO: Navigate to check-in form
+    Alert.alert('Check In', 'Manual check-in feature coming soon!');
   };
 
   const handleReports = () => {
@@ -175,6 +179,8 @@ const VisitorDashboard: React.FC<VisitorDashboardProps> = ({
           <Text style={styles.footerSubtext}>Version 1.0.0</Text>
         </View>
       </ScrollView>
+
+        {/* QR Scanner removed for now */}
     </SafeAreaView>
   );
 };
