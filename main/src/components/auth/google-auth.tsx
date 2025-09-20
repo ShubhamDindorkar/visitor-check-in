@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, Alert, TouchableOpacity } from 'react-native'
 import React, { useEffect, useState } from 'react'
+import VisitorDashboard from '../dashboard/VisitorDashboard'
 import { 
   GoogleSignin, 
   GoogleSigninButton, 
@@ -147,35 +148,45 @@ const GoogleAuth = () => {
     }
   };
 
+  // Get user display info
+  const getUserDisplayInfo = () => {
+    if (user) {
+      return {
+        name: user.user.name || 'User',
+        email: user.user.email || '',
+      };
+    }
+    if (firebaseUser) {
+      return {
+        name: firebaseUser.displayName || 'User',
+        email: firebaseUser.email || '',
+      };
+    }
+    return { name: 'User', email: '' };
+  };
+
+  const userInfo = getUserDisplayInfo();
+
   return (
     <View style={styles.container}>
       {(user || firebaseUser) ? (
-        <View style={styles.userInfo}>
-          <Text style={styles.welcomeText}>Welcome!</Text>
-          {user && (
-            <>
-              <Text style={styles.userName}>{user.user.name}</Text>
-              <Text style={styles.userEmail}>{user.user.email}</Text>
-            </>
-          )}
-          {firebaseUser && !user && (
-            <>
-              <Text style={styles.userName}>{firebaseUser.displayName || 'User'}</Text>
-              <Text style={styles.userEmail}>{firebaseUser.email}</Text>
-            </>
-          )}
-          <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-            <Text style={styles.signOutButtonText}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <GoogleSigninButton
-          size={GoogleSigninButton.Size.Wide}
-          color={GoogleSigninButton.Color.Dark}
-          onPress={signIn}
-          disabled={isSigninInProgress}
-          style={styles.signInButton}
+        <VisitorDashboard
+          userName={userInfo.name}
+          userEmail={userInfo.email}
+          onSignOut={signOut}
         />
+      ) : (
+        <View style={styles.signInContainer}>
+          <Text style={styles.appTitle}>Visitor Check-In</Text>
+          <Text style={styles.appSubtitle}>Sign in to continue</Text>
+          <GoogleSigninButton
+            size={GoogleSigninButton.Size.Wide}
+            color={GoogleSigninButton.Color.Dark}
+            onPress={signIn}
+            disabled={isSigninInProgress}
+            style={styles.signInButton}
+          />
+        </View>
       )}
     </View>
   );
@@ -186,47 +197,30 @@ export default GoogleAuth;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  signInContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#f8f9fa',
   },
-  userInfo: {
-    alignItems: 'center',
-    padding: 20,
-  },
-  welcomeText: {
-    fontSize: 24,
+  appTitle: {
+    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
+    color: '#212529',
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  userName: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 5,
-    color: '#555',
-  },
-  userEmail: {
-    fontSize: 14,
-    color: '#777',
-    marginBottom: 20,
+  appSubtitle: {
+    fontSize: 16,
+    color: '#6c757d',
+    marginBottom: 40,
+    textAlign: 'center',
   },
   signInButton: {
     width: 312,
     height: 48,
-  },
-  signOutButton: {
-    backgroundColor: '#dc3545',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 16,
-    minWidth: 120,
-  },
-  signOutButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
   },
 });
