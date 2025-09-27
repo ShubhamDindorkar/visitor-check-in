@@ -63,7 +63,8 @@ export default function Login() {
       const firebaseUser = await onGoogleButtonPress();
       
       console.log('User signed in with Firebase:', firebaseUser);
-      Alert.alert('Success', 'Signed in successfully!');
+      // Navigate to welcome screen after successful sign-in
+      router.push("/welcome");
     } catch (error) {
       console.log('Sign in error:', error);
       
@@ -104,9 +105,9 @@ export default function Login() {
       </TouchableOpacity>
 
       {/* Next Button */}
-      <TouchableOpacity style={styles.topNextButton} onPress={handleNext}>
+      {/*<TouchableOpacity style={styles.topNextButton} onPress={handleNext}>
         <Ionicons name="arrow-forward" size={32} color="#007AFF" />
-      </TouchableOpacity>
+      </TouchableOpacity>*/}
 
       <View style={styles.content}>
         <Text style={styles.title}>Choose Sign In Method</Text>
