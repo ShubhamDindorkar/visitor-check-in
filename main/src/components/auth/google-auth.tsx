@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, Alert, TouchableOpacity } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react'
 import { 
   GoogleSignin, 
   GoogleSigninButton, 
@@ -43,15 +43,19 @@ async function onGoogleButtonPress() {
   return signInWithCredential(getAuth(), googleCredential);
 }
 
-const GoogleAuth = () => {
+const GoogleAuth = forwardRef<any, any>((props, ref) => {
   const [user, setUser] = useState<User | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [isSigninInProgress, setIsSigninInProgress] = useState(false);
 
+  useImperativeHandle(ref, () => ({
+    signIn: signIn
+  }));
+
   useEffect(() => {
     // Configure Google Sign-In
     GoogleSignin.configure({
-      webClientId: '234537435099-e92anfafr71uka98e4sodaehd0ljpgjk.apps.googleusercontent.com',
+      webClientId: '234537435099-cpea3c79v7md1mclvgqcc8bmsj6krb4n.apps.googleusercontent.com',
       offlineAccess: true,
       hostedDomain: '',
       forceCodeForRefreshToken: true,
@@ -179,16 +183,15 @@ const GoogleAuth = () => {
       )}
     </View>
   );
-};
+});
 
 export default GoogleAuth;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
+    width: '100%',
     alignItems: 'center',
-    padding: 20,
+    justifyContent: 'center',
   },
   userInfo: {
     alignItems: 'center',
@@ -212,8 +215,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   signInButton: {
-    width: 312,
-    height: 48,
+    width: 280,
+    height: 50,
+    borderRadius: 8,
   },
   signOutButton: {
     backgroundColor: '#dc3545',
