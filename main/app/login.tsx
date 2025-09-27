@@ -15,9 +15,11 @@ export default function Login() {
   useEffect(() => {
     // Configure Google Sign-In
     GoogleSignin.configure({
-      webClientId: '234537435099-cpea3c79v7md1mclvgqcc8bmsj6krb4n.apps.googleusercontent.com',
+      // Use the web client ID for Firebase Auth (from google-services.json)
+      webClientId: '234537435099-e92anfafr71uka98e4sodaehd0ljpgjk.apps.googleusercontent.com',
+      // Explicitly set the iOS client ID from GoogleService-Info.plist
+      iosClientId: '234537435099-cpea3c79v7md1mclvgqcc8bmsj6krb4n.apps.googleusercontent.com',
       offlineAccess: true,
-      hostedDomain: '',
       forceCodeForRefreshToken: true,
     });
   }, []);
