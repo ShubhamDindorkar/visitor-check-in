@@ -104,10 +104,7 @@ export default function Login() {
         <Ionicons name="arrow-back" size={32} color="#007AFF" />
       </TouchableOpacity>
 
-      {/* Next Button */}
-      {/*<TouchableOpacity style={styles.topNextButton} onPress={handleNext}>
-        <Ionicons name="arrow-forward" size={32} color="#007AFF" />
-      </TouchableOpacity>*/}
+
 
       <View style={styles.content}>
         <Text style={styles.title}>Choose Sign In Method</Text>

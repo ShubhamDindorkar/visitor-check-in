@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "black",
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "600",
   },
 });

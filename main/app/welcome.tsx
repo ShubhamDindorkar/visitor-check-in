@@ -22,7 +22,7 @@ export default function Welcome() {
       <View style={styles.content}>
         {/* Welcome Message */}
         <Text style={styles.welcomeTitle}>Welcome,</Text>
-        <Text style={styles.welcomeTitle}>Visitor!</Text>
+        <Text style={styles.welcomeTitle}>.</Text>
         
         {/* Input Field */}
         <View style={styles.inputContainer}>
