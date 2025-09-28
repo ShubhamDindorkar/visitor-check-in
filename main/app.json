@@ -45,7 +45,12 @@
       ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.234537435099-cpea3c79v7md1mclvgqcc8bmsj6krb4n"
+        }
+      ],
       [
         "expo-build-properties",
         {
