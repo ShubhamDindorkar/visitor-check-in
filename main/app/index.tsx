@@ -1,5 +1,6 @@
 import { Text, View, StyleSheet, TouchableOpacity, SafeAreaView, Image } from "react-native";
 import { router } from "expo-router";
+import GoogleAuth from "../src/components/auth/google-auth";
 
 export default function Home() {
   const handleContinue = () => {
@@ -10,19 +11,18 @@ export default function Home() {
     <SafeAreaView style={styles.container}>
       {/* Main Logo */}
       <View style={styles.iconContainer}>
-        <Image 
-          source={require("../assets/images/logo.png")} 
+        <Image
+          source={require("../assets/images/logo.png")}
           style={styles.logoImage}
           resizeMode="contain"
         />
       </View>
-      
-      {/* Title */}
-      
-      
-      {/* Subtitle */}
-      
-      
+
+      {/* Google Auth */}
+      <View style={styles.authContainer}>
+        <GoogleAuth />
+      </View>
+
       {/* Continue Button - Positioned at bottom */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
@@ -36,17 +36,10 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white", // Entire page is white
+    backgroundColor: "white",
     justifyContent: "center",
     alignItems: "center",
     padding: 40,
-  },
-  buttonContainer: {
-    position: "absolute",
-    bottom: 40,
-    left: 40,
-    right: 40,
-    alignItems: "center",
   },
   iconContainer: {
     marginBottom: 30,
@@ -57,20 +50,17 @@ const styles = StyleSheet.create({
     width: 300,
     height: 150,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#2C2C2E",
-    marginBottom: 80,
-    textAlign: "center",
+  authContainer: {
+    marginVertical: 20,
+    width: "100%",
+    alignItems: "center",
   },
-  subtitle: {
-    fontSize: 16,
-    color: "#8E8E93",
-    textAlign: "center",
-    lineHeight: 24,
-    marginBottom: 50,
-    paddingHorizontal: 20,
+  buttonContainer: {
+    position: "absolute",
+    bottom: 40,
+    left: 40,
+    right: 40,
+    alignItems: "center",
   },
   continueButton: {
     backgroundColor: "white",
@@ -82,16 +72,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     minWidth: 250,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 5,
-  },
-  buttonIcon: {
-    marginRight: 8,
   },
   buttonText: {
     color: "black",
