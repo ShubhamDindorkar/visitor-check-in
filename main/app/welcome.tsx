@@ -7,7 +7,9 @@ import { getAuth, signOut as firebaseSignOut } from '@react-native-firebase/auth
 
 export default function Welcome() {
   const [userName, setUserName] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
   const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState<boolean>(false);
   
   useEffect(() => {
     fetchUserName();
@@ -23,6 +25,7 @@ export default function Welcome() {
         // Extract first name from display name
         const firstName = firebaseUser.displayName.split(' ')[0];
         setUserName(firstName);
+        setUserEmail(firebaseUser.email || "");
         return;
       }
 
@@ -32,12 +35,15 @@ export default function Welcome() {
         // Extract first name from Google user name
         const firstName = googleUser.user.name.split(' ')[0];
         setUserName(firstName);
+        setUserEmail(googleUser.user.email || "");
       } else {
         setUserName("Visitor");
+        setUserEmail("");
       }
     } catch (error) {
       console.log('Error fetching user name:', error);
       setUserName("Visitor");
+      setUserEmail("");
     }
   };
 
@@ -82,6 +88,14 @@ export default function Welcome() {
     }
   };
 
+  const toggleProfileDropdown = () => {
+    setShowProfileDropdown(!showProfileDropdown);
+  };
+
+  const closeProfileDropdown = () => {
+    setShowProfileDropdown(false);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Background Tree Logo */}
@@ -93,13 +107,53 @@ export default function Welcome() {
       
       {/* Back Button */}
       <TouchableOpacity style={styles.topBackButton} onPress={handleBack}>
-        <Ionicons name="arrow-back" size={32} color="#007AFF" />
+        <Ionicons name="arrow-back" size={32} color="#000" />
       </TouchableOpacity>
+
+      {/* Profile Icon and Dropdown */}
+      <TouchableOpacity style={styles.profileButton} onPress={toggleProfileDropdown}>
+        <Ionicons name="person-circle" size={32} color="#000" />
+      </TouchableOpacity>
+
+      {/* Profile Dropdown */}
+      {showProfileDropdown && (
+        <>
+          <TouchableOpacity 
+            style={styles.dropdownOverlay} 
+            onPress={closeProfileDropdown}
+            activeOpacity={1}
+          />
+          <View style={styles.profileDropdown}>
+            <Text style={styles.dropdownName}>{userName || "User"}</Text>
+            <Text style={styles.dropdownEmail}>{userEmail || "No email"}</Text>
+            
+            {/* Divider */}
+            <View style={styles.dropdownDivider} />
+            
+            {/* Sign Out Option */}
+            <TouchableOpacity 
+              style={styles.dropdownSignOutButton} 
+              onPress={handleSignOut}
+              disabled={isSigningOut}
+            >
+              {isSigningOut ? (
+                <ActivityIndicator size="small" color="#FF3B30" />
+              ) : (
+                <>
+                  <Ionicons name="log-out-outline" size={18} color="#FF3B30" />
+                  <Text style={styles.dropdownSignOutText}>Sign Out</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
 
       <View style={styles.content}>
         {/* Welcome Message */}
-        <Text style={styles.welcomeTitle}>Welcome,</Text>
-        <Text style={styles.welcomeTitle}>{userName ? `${userName}!` : "..."}</Text>
+        <Text style={styles.welcomeTitle}>
+          Welcome, {userName ? `${userName}!` : "..."}
+        </Text>
         
         {/* Input Field */}
         <View style={styles.inputContainer}>
@@ -143,7 +197,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: "50%",
     left: "50%",
-    transform: [{ translateX: -225 }, { translateY: -325 }],
+    transform: [{ translateX: -225 }, { translateY: -370 }],
     width: 450,
     height: 500,
     opacity: 0.25,
@@ -176,6 +230,83 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  profileButton: {
+    position: "absolute",
+    top: 60,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#f5f5f5",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  dropdownOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 11,
+  },
+  profileDropdown: {
+    position: "absolute",
+    top: 120,
+    right: 20,
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    minWidth: 200,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 12,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  dropdownName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: 4,
+  },
+  dropdownEmail: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 0,
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: "#E0E0E0",
+    marginVertical: 12,
+  },
+  dropdownSignOutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+  },
+  dropdownSignOutText: {
+    fontSize: 14,
+    color: "#FF3B30",
+    fontWeight: "500",
+    marginLeft: 8,
+  },
   welcomeTitle: {
     fontSize: 36,
     fontWeight: "bold",
@@ -184,7 +315,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   inputContainer: {
-    marginTop: 60,
+    marginTop: 20,
     alignItems: "center",
   },
   textInput: {

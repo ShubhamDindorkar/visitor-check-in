@@ -93,6 +93,11 @@ export default function Login() {
     console.log("Phone number sign in selected");
   };
 
+  const handleQRScan = () => {
+    // TODO: Implement QR code scanning
+    console.log("QR code scan selected");
+  };
+
   const handleNext = () => {
     router.push("/welcome");
   };
@@ -101,7 +106,7 @@ export default function Login() {
     <SafeAreaView style={styles.container}>
       {/* Back Button */}
       <TouchableOpacity style={styles.topBackButton} onPress={handleBack}>
-        <Ionicons name="arrow-back" size={32} color="#007AFF" />
+        <Ionicons name="arrow-back" size={32} color="#000" />
       </TouchableOpacity>
 
 
@@ -141,6 +146,24 @@ export default function Login() {
             <View style={styles.optionText}>
               <Text style={styles.optionTitle}>Continue with Phone number</Text>
               <Text style={styles.optionSubtitle}>Sign in using email OTP verification</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+        </TouchableOpacity>
+
+        {/* QR Code Scan Option */}
+        <TouchableOpacity style={styles.authOption} onPress={handleQRScan}>
+          <View style={styles.optionLeft}>
+            <View style={styles.qrIcon}>
+              <Image 
+                source={require("../assets/images/qr-code.png")} 
+                style={styles.qrImage}
+                resizeMode="contain"
+              />
+            </View>
+            <View style={styles.optionText}>
+              <Text style={styles.optionTitle}>Scan QR Code</Text>
+              <Text style={styles.optionSubtitle}>Quick access with QR code scanning</Text>
             </View>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
@@ -222,10 +245,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "white",
-    paddingVertical: 16,
+    paddingVertical: 20,
     paddingHorizontal: 20,
     borderRadius: 12,
     marginBottom: 16,
+    height: 80,
+    width: "100%",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -251,6 +276,13 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   phoneImage: {
+    width: 40,
+    height: 40,
+  },
+  qrIcon: {
+    marginRight: 16,
+  },
+  qrImage: {
     width: 40,
     height: 40,
   },
