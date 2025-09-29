@@ -1,12 +1,13 @@
-import { Text, View, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Image } from "react-native";
+import { Text, View, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { getAuth } from '@react-native-firebase/auth';
+import { getAuth, signOut as firebaseSignOut } from '@react-native-firebase/auth';
 
 export default function Welcome() {
   const [userName, setUserName] = useState<string>("");
+  const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
   
   useEffect(() => {
     fetchUserName();
@@ -49,6 +50,38 @@ export default function Welcome() {
     console.log("Continue button pressed");
   };
 
+  const handleSignOut = async () => {
+    try {
+      setIsSigningOut(true);
+      
+      // Sign out from both Google and Firebase
+      await Promise.all([
+        GoogleSignin.signOut(),
+        firebaseSignOut(getAuth())
+      ]);
+      
+      // Show success popup
+      Alert.alert(
+        'Success', 
+        'You have been signed out from Google successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Navigate back to the previous login screen
+              router.back();
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.log('Sign out error:', error);
+      Alert.alert('Error', 'Failed to sign out. Please try again.');
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Background Tree Logo */}
@@ -83,6 +116,19 @@ export default function Welcome() {
         <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
           <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
+        
+        {/* Sign Out Button */}
+        <TouchableOpacity 
+          style={styles.signOutButton} 
+          onPress={handleSignOut}
+          disabled={isSigningOut}
+        >
+          {isSigningOut ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Text style={styles.signOutButtonText}>Sign Out</Text>
+          )}
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -97,9 +143,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: "50%",
     left: "50%",
-    transform: [{ translateX: -200 }, { translateY: -250 }],
-    width: 400,
-    height: 400,
+    transform: [{ translateX: -225 }, { translateY: -325 }],
+    width: 450,
+    height: 500,
     opacity: 0.25,
     zIndex: 1,
   },
@@ -180,6 +226,30 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "black",
+    fontSize: 20,
+    fontWeight: "600",
+  },
+  signOutButton: {
+    backgroundColor: "black",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 40,
+    borderRadius: 12,
+    minWidth: 250,
+    marginTop: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  signOutButtonText: {
+    color: "white",
     fontSize: 20,
     fontWeight: "600",
   },

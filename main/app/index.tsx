@@ -19,9 +19,9 @@ export default function Home() {
       </View>
 
       {/* Google Auth */}
-      <View style={styles.authContainer}>
+      {/* <View style={styles.authContainer}>
         <GoogleAuth />
-      </View>
+      </View> */}
 
       {/* Continue Button - Positioned at bottom */}
       <View style={styles.buttonContainer}>
