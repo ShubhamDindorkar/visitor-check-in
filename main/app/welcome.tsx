@@ -7,7 +7,9 @@ import { getAuth, signOut as firebaseSignOut } from '@react-native-firebase/auth
 
 export default function Welcome() {
   const [userName, setUserName] = useState<string>("");
+  const [fullName, setFullName] = useState<string>("");
   const [userEmail, setUserEmail] = useState<string>("");
+  const [patientName, setPatientName] = useState<string>("");
   const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState<boolean>(false);
   
@@ -22,9 +24,11 @@ export default function Welcome() {
       const firebaseUser = auth.currentUser;
       
       if (firebaseUser && firebaseUser.displayName) {
-        // Extract first name from display name
+        // Extract first name from display name for welcome message
         const firstName = firebaseUser.displayName.split(' ')[0];
         setUserName(firstName);
+        // Store full name for dropdown
+        setFullName(firebaseUser.displayName);
         setUserEmail(firebaseUser.email || "");
         return;
       }
@@ -32,28 +36,45 @@ export default function Welcome() {
       // Fallback to Google Sign-In current user
       const googleUser = await GoogleSignin.getCurrentUser();
       if (googleUser && googleUser.user.name) {
-        // Extract first name from Google user name
+        // Extract first name from Google user name for welcome message
         const firstName = googleUser.user.name.split(' ')[0];
         setUserName(firstName);
+        // Store full name for dropdown
+        setFullName(googleUser.user.name);
         setUserEmail(googleUser.user.email || "");
       } else {
         setUserName("Visitor");
+        setFullName("Visitor");
         setUserEmail("");
       }
     } catch (error) {
       console.log('Error fetching user name:', error);
       setUserName("Visitor");
+      setFullName("Visitor");
       setUserEmail("");
     }
   };
 
-  const handleBack = () => {
-    router.back();
-  };
-
   const handleContinue = () => {
+    // Check if patient name is empty
+    if (!patientName.trim()) {
+      Alert.alert(
+        'Enter Patient Name', 
+        'Enter Patient Name to Continue!',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Focus can be added here if needed
+            }
+          }
+        ]
+      );
+      return;
+    }
+    
     // TODO: Navigate to next page or handle form submission
-    console.log("Continue button pressed");
+    console.log("Continue button pressed with patient name:", patientName);
   };
 
   const handleSignOut = async () => {
@@ -98,21 +119,9 @@ export default function Welcome() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Background Tree Logo */}
-      <Image 
-        source={require("../assets/images/tree-logo.png")} 
-        style={styles.backgroundLogo}
-        resizeMode="contain"
-      />
-      
-      {/* Back Button */}
-      <TouchableOpacity style={styles.topBackButton} onPress={handleBack}>
-        <Ionicons name="arrow-back" size={32} color="#000" />
-      </TouchableOpacity>
-
       {/* Profile Icon and Dropdown */}
       <TouchableOpacity style={styles.profileButton} onPress={toggleProfileDropdown}>
-        <Ionicons name="person-circle" size={32} color="#000" />
+        <Ionicons name="person-circle" size={40} color="#000" />
       </TouchableOpacity>
 
       {/* Profile Dropdown */}
@@ -124,8 +133,37 @@ export default function Welcome() {
             activeOpacity={1}
           />
           <View style={styles.profileDropdown}>
-            <Text style={styles.dropdownName}>{userName || "User"}</Text>
+            <Text style={styles.dropdownName}>{fullName || "User"}</Text>
             <Text style={styles.dropdownEmail}>{userEmail || "No email"}</Text>
+            
+            {/* Divider */}
+            <View style={styles.dropdownDivider} />
+            
+            {/* Notifications Option */}
+            <TouchableOpacity 
+              style={styles.dropdownOption} 
+              onPress={() => {
+                // TODO: Navigate to notifications
+                console.log("Notifications pressed");
+                closeProfileDropdown();
+              }}
+            >
+              <Ionicons name="notifications-outline" size={18} color="#007AFF" />
+              <Text style={styles.dropdownOptionText}>Notifications</Text>
+            </TouchableOpacity>
+            
+            {/* Help & Support Option */}
+            <TouchableOpacity 
+              style={styles.dropdownOption} 
+              onPress={() => {
+                // TODO: Navigate to help & support
+                console.log("Help & Support pressed");
+                closeProfileDropdown();
+              }}
+            >
+              <Ionicons name="help-circle-outline" size={18} color="#007AFF" />
+              <Text style={styles.dropdownOptionText}>Help & Support</Text>
+            </TouchableOpacity>
             
             {/* Divider */}
             <View style={styles.dropdownDivider} />
@@ -161,6 +199,8 @@ export default function Welcome() {
             style={styles.textInput}
             placeholder="Enter patient name"
             placeholderTextColor="#000"
+            value={patientName}
+            onChangeText={setPatientName}
           />
         </View>
       </View>
@@ -193,42 +233,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "white",
   },
-  backgroundLogo: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: [{ translateX: -225 }, { translateY: -370 }],
-    width: 450,
-    height: 500,
-    opacity: 0.25,
-    zIndex: 1,
-  },
   content: {
     flex: 1,
     paddingHorizontal: 24,
     paddingVertical: 32,
     justifyContent: "center",
     zIndex: 2,
-  },
-  topBackButton: {
-    position: "absolute",
-    top: 60,
-    left: 20,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#f5f5f5",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   profileButton: {
     position: "absolute",
@@ -279,13 +289,14 @@ const styles = StyleSheet.create({
     borderColor: "#E0E0E0",
   },
   dropdownName: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 20,
+    fontWeight: "bold",
     color: "#000",
     marginBottom: 4,
   },
   dropdownEmail: {
-    fontSize: 14,
+    fontSize: 18,
+    fontWeight: "bold",
     color: "#666",
     marginBottom: 0,
   },
@@ -301,10 +312,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     borderRadius: 8,
   },
+  dropdownOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    marginVertical: 2,
+  },
+  dropdownOptionText: {
+    fontSize: 18,
+    color: "#007AFF",
+    fontWeight: "bold",
+    marginLeft: 8,
+  },
   dropdownSignOutText: {
-    fontSize: 14,
+    fontSize: 18,
     color: "#FF3B30",
-    fontWeight: "500",
+    fontWeight: "bold",
     marginLeft: 8,
   },
   welcomeTitle: {
