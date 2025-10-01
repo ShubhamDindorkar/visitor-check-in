@@ -81,8 +81,7 @@ export default function Login() {
   };
 
   const handleQRScan = () => {
-    // TODO: Implement QR code scanning
-    console.log("QR code scan selected");
+    router.push("/scan");
   };
 
   const handleNext = () => {
