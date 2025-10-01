@@ -1,11 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Button, Platform, StyleSheet, Text, TextInput, View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Camera, CameraView, BarcodeScanningResult } from "expo-camera";
+import { CameraView, useCameraPermissions, BarcodeScanningResult } from "expo-camera";
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
-
-type PermissionStatus = "unknown" | "granted" | "denied";
 
 type VisitPayload = {
   visitorName: string;
@@ -14,22 +12,18 @@ type VisitPayload = {
 };
 
 export default function ScanScreen() {
-  const [permission, setPermission] = useState<PermissionStatus>("unknown");
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [rawData, setRawData] = useState<string>("");
   const [form, setForm] = useState<VisitPayload>({ visitorName: "", visitorMobile: "", patientName: "" });
+  const [torchEnabled, setTorchEnabled] = useState<boolean>(false);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const { status } = await Camera.requestCameraPermissionsAsync();
-        setPermission(status === "granted" ? "granted" : "denied");
-      } catch (e) {
-        setPermission("denied");
-      }
-    })();
-  }, []);
+    if (permission && !permission.granted && permission.canAskAgain) {
+      requestPermission();
+    }
+  }, [permission, requestPermission]);
 
   const parseQr = useCallback((data: string): Partial<VisitPayload> => {
     try {
@@ -86,14 +80,13 @@ export default function ScanScreen() {
       setScanned(false);
     } catch (error) {
       Alert.alert("Error", "Failed to save visit. Please try again.");
-      // eslint-disable-next-line no-console
       console.error("Failed to add visit:", error);
     } finally {
       setIsSubmitting(false);
     }
   }, [canSubmit, form.patientName, form.visitorMobile, form.visitorName, rawData]);
 
-  if (permission === "unknown") {
+  if (!permission) {
     return (
       <SafeAreaView style={styles.center}>
         <ActivityIndicator />
@@ -102,11 +95,12 @@ export default function ScanScreen() {
     );
   }
 
-  if (permission === "denied") {
+  if (!permission.granted) {
     return (
       <SafeAreaView style={styles.center}>
         <Text style={styles.title}>Camera access is required to scan QR codes.</Text>
         <Text style={styles.muted}>Enable camera permission in Settings and try again.</Text>
+        <Button title="Grant Permission" onPress={requestPermission} />
       </SafeAreaView>
     );
   }
@@ -119,9 +113,21 @@ export default function ScanScreen() {
           barcodeScannerSettings={{
             barcodeTypes: ["qr"],
           }}
+          enableTorch={torchEnabled}
           onBarcodeScanned={scanned ? undefined : onBarCodeScanned}
           style={StyleSheet.absoluteFillObject}
         />
+        {scanned && (
+          <View style={styles.overlay}>
+            <Text style={styles.overlayText}>QR Code Scanned!</Text>
+          </View>
+        )}
+        <View style={styles.torchContainer}>
+          <Button
+            title={torchEnabled ? "🔦 ON" : "🔦 OFF"}
+            onPress={() => setTorchEnabled(!torchEnabled)}
+          />
+        </View>
       </View>
 
       <View style={styles.formContainer}>
@@ -185,6 +191,29 @@ const styles = StyleSheet.create({
   scannerContainer: {
     flex: 1,
   },
+  torchContainer: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    borderRadius: 25,
+    padding: 8,
+  },
+  overlay: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    right: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  overlayText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   formContainer: {
     padding: 16,
     backgroundColor: "#fff",
@@ -211,5 +240,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-
-

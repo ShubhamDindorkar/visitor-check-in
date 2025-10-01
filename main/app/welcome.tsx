@@ -95,8 +95,8 @@ export default function Welcome() {
           {
             text: 'OK',
             onPress: () => {
-              // Navigate back to the previous login screen
-              router.back();
+              // Navigate to main index screen
+              router.replace('/');
             }
           }
         ]
@@ -156,9 +156,8 @@ export default function Welcome() {
             <TouchableOpacity 
               style={styles.dropdownOption} 
               onPress={() => {
-                // TODO: Navigate to help & support
-                console.log("Help & Support pressed");
                 closeProfileDropdown();
+                router.push("/help-and-support");
               }}
             >
               <Ionicons name="help-circle-outline" size={18} color="#007AFF" />

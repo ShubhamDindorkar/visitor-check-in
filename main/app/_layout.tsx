@@ -31,13 +31,21 @@ export default function RootLayout() {
   useEffect(() => {
     if (isLoading) return;
 
-    const isOnWelcome = segments[0] === 'welcome';
+    const currentSegment = segments[0] as string;
+    const isOnWelcome = currentSegment === 'welcome';
+    const isOnHelpAndSupport = currentSegment === 'help-and-support';
+    const isOnScan = currentSegment === 'scan';
+    const isOnLogin = currentSegment === 'login';
+    const isOnIndex = !currentSegment;
 
-    if (user && !isOnWelcome) {
-      // User is signed in but not on welcome screen, redirect to welcome
+    // Protected screens that require authentication
+    const isOnProtectedScreen = isOnWelcome || isOnHelpAndSupport || isOnScan;
+
+    if (user && (isOnLogin || isOnIndex)) {
+      // User is signed in but on login/index screen, redirect to welcome
       router.replace('/welcome');
-    } else if (!user && isOnWelcome) {
-      // User is not signed in but on welcome screen, redirect to index
+    } else if (!user && isOnProtectedScreen) {
+      // User is not signed in but trying to access protected screen, redirect to index
       router.replace('/');
     }
   }, [user, segments, isLoading]);
