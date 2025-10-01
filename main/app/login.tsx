@@ -1,7 +1,6 @@
 import { Text, View, StyleSheet, SafeAreaView, TouchableOpacity, Alert, Image } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect } from "react";
 import { 
   GoogleSignin, 
   statusCodes,
@@ -12,18 +11,6 @@ import {
 import { GoogleAuthProvider, getAuth, signInWithCredential } from '@react-native-firebase/auth';
 
 export default function Login() {
-  useEffect(() => {
-    // Configure Google Sign-In
-    GoogleSignin.configure({
-      // Use the web client ID for Firebase Auth (from google-services.json)
-      webClientId: '234537435099-e92anfafr71uka98e4sodaehd0ljpgjk.apps.googleusercontent.com',
-      // Explicitly set the iOS client ID from GoogleService-Info.plist
-      iosClientId: '234537435099-cpea3c79v7md1mclvgqcc8bmsj6krb4n.apps.googleusercontent.com',
-      offlineAccess: true,
-      forceCodeForRefreshToken: true,
-    });
-  }, []);
-
   const handleBack = () => {
     router.back();
   };

@@ -32,6 +32,14 @@
     "plugins": [
       "expo-router",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow camera access to scan QR codes.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
@@ -60,12 +68,7 @@
           }
         }
       ],
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "Allow camera access to scan QR codes."
-        }
-      ]
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
