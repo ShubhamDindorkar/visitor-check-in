@@ -1,9 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Button, Platform, StyleSheet, Text, TextInput, View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CameraView, useCameraPermissions, BarcodeScanningResult } from "expo-camera";
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
+
+// Try/catch import for expo-camera to handle missing module gracefully
+let CameraView: any = null;
+let useCameraPermissions: any = null;
+let BarcodeScanningResult: any = null;
+
+try {
+  const cameraModule = require("expo-camera");
+  CameraView = cameraModule.CameraView;
+  useCameraPermissions = cameraModule.useCameraPermissions;
+  BarcodeScanningResult = cameraModule.BarcodeScanningResult;
+} catch (error) {
+  console.warn("Camera module not available:", error);
+}
 
 type VisitPayload = {
   visitorName: string;
@@ -12,7 +25,8 @@ type VisitPayload = {
 };
 
 export default function ScanScreen() {
-  const [permission, requestPermission] = useCameraPermissions();
+  const [cameraAvailable, setCameraAvailable] = useState<boolean>(false);
+  const [permission, requestPermission] = useCameraPermissions ? useCameraPermissions() : [null, () => {}];
   const [scanned, setScanned] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [rawData, setRawData] = useState<string>("");
@@ -20,6 +34,7 @@ export default function ScanScreen() {
   const [torchEnabled, setTorchEnabled] = useState<boolean>(false);
 
   useEffect(() => {
+    setCameraAvailable(!!CameraView && !!useCameraPermissions);
     if (permission && !permission.granted && permission.canAskAgain) {
       requestPermission();
     }
@@ -37,7 +52,7 @@ export default function ScanScreen() {
     }
   }, []);
 
-  const onBarCodeScanned = useCallback(async ({ data }: BarcodeScanningResult) => {
+  const onBarCodeScanned = useCallback(async ({ data }: any) => {
     if (scanned) return;
     setScanned(true);
     setRawData(String(data ?? ""));
@@ -85,6 +100,40 @@ export default function ScanScreen() {
       setIsSubmitting(false);
     }
   }, [canSubmit, form.patientName, form.visitorMobile, form.visitorName, rawData]);
+
+  if (!cameraAvailable) {
+    return (
+      <SafeAreaView style={styles.center}>
+        <Text style={styles.title}>Camera not available</Text>
+        <Text style={styles.muted}>Camera module is not properly installed. Please rebuild the app.</Text>
+        <View style={styles.formContainer}>
+          <Text style={styles.sectionTitle}>Manual Entry</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Visitor name"
+            value={form.visitorName}
+            onChangeText={(t) => setForm((p) => ({ ...p, visitorName: t }))}
+            autoCapitalize="words"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Visitor mobile"
+            value={form.visitorMobile}
+            onChangeText={(t) => setForm((p) => ({ ...p, visitorMobile: t }))}
+            keyboardType="phone-pad"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Patient name"
+            value={form.patientName}
+            onChangeText={(t) => setForm((p) => ({ ...p, patientName: t }))}
+            autoCapitalize="words"
+          />
+          <Button title={isSubmitting ? "Saving…" : "Save visit"} onPress={handleSubmit} disabled={!canSubmit || isSubmitting} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!permission) {
     return (
