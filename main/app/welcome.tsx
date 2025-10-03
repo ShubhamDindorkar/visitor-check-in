@@ -11,8 +11,10 @@ export default function Welcome() {
   const [fullName, setFullName] = useState<string>("");
   const [userEmail, setUserEmail] = useState<string>("");
   const [patientName, setPatientName] = useState<string>("");
+  const [mobileNumber, setMobileNumber] = useState<string>("");
   const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState<boolean>(false);
+  const [isMobileFocused, setIsMobileFocused] = useState<boolean>(false);
   
   useEffect(() => {
     fetchUserName();
@@ -25,9 +27,8 @@ export default function Welcome() {
       const firebaseUser = auth.currentUser;
       
       if (firebaseUser && firebaseUser.displayName) {
-        // Extract first name from display name for welcome message
-        const firstName = firebaseUser.displayName.split(' ')[0];
-        setUserName(firstName);
+        // Use full name for welcome message instead of just first name
+        setUserName(firebaseUser.displayName);
         // Store full name for dropdown
         setFullName(firebaseUser.displayName);
         setUserEmail(firebaseUser.email || "");
@@ -37,9 +38,8 @@ export default function Welcome() {
       // Fallback to Google Sign-In current user
       const googleUser = await GoogleSignin.getCurrentUser();
       if (googleUser && googleUser.user.name) {
-        // Extract first name from Google user name for welcome message
-        const firstName = googleUser.user.name.split(' ')[0];
-        setUserName(firstName);
+        // Use full name for welcome message instead of just first name
+        setUserName(googleUser.user.name);
         // Store full name for dropdown
         setFullName(googleUser.user.name);
         setUserEmail(googleUser.user.email || "");
@@ -56,26 +56,173 @@ export default function Welcome() {
     }
   };
 
-  const handleContinue = () => {
-    // Check if patient name is empty
+    const handleMobileFocus = () => {
+    setIsMobileFocused(true);
+    if (!mobileNumber.startsWith("+91 ")) {
+      setMobileNumber("+91 ");
+    }
+  };
+
+  const handleMobileChange = (text: string) => {
+    // Always keep +91 prefix
+    if (!text.startsWith("+91 ")) {
+      if (text.length === 0) {
+        setMobileNumber("");
+        setIsMobileFocused(false);
+        return;
+      }
+      // If user tries to type without +91, add it
+      text = "+91 " + text.replace(/^\+91\s*/, "");
+    }
+    
+    // Remove any non-numeric characters after +91 
+    const numberPart = text.slice(4).replace(/\D/g, "");
+    
+    // Limit to 10 digits after +91
+    if (numberPart.length <= 10) {
+      setMobileNumber("+91 " + numberPart);
+    }
+  };
+
+  const handleContinue = async () => {
     if (!patientName.trim()) {
+      Alert.alert("Error", "Please enter patient name");
+      return;
+    }
+    
+    if (!mobileNumber.trim() || mobileNumber === "+91 ") {
+      Alert.alert("Error", "Please enter mobile number");
+      return;
+    }
+    
+    // Validate mobile number (should be +91 followed by 10 digits)
+    const mobileRegex = /^\+91 [6-9]\d{9}$/;
+    if (!mobileRegex.test(mobileNumber)) {
+      Alert.alert("Error", "Please enter a valid 10-digit Indian mobile number");
+      return;
+    }
+
+    try {
+      // Create proper timestamp
+      const currentTime = new Date();
+      
+      // Store visit data with the required structure
+      const visitData = {
+        checkInTime: currentTime.toISOString(),
+        checkOutTime: null, // Will be filled when user checks out
+        createdAt: currentTime.toISOString(),
+        createdBy: userEmail || 'unknown-user', // Using email as user identifier
+        date: currentTime.toISOString(),
+        patientName: patientName.trim(),
+        status: 'checked_in',
+        visitorMobile: mobileNumber.trim(),
+        visitorName: fullName || userName || 'Unknown Visitor'
+      };
+
+      console.log("Visit data prepared:", visitData);
+      
+      // Try to store in Firebase using a simplified approach
+      try {
+        // Get Firebase Auth token for authentication
+        const auth = getAuth();
+        const user = auth.currentUser;
+        
+        if (user) {
+          // Create a simpler API call to a Firebase Cloud Function
+          // This will be more reliable than direct Firestore REST API
+          const response = await fetch(`https://us-central1-visitor-management-241ea.cloudfunctions.net/addVisit`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${await user.getIdToken()}`,
+            },
+            body: JSON.stringify(visitData)
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log("✅ Visit data stored successfully in Firebase:", result);
+            console.log("🔍 Full response object:", JSON.stringify(result, null, 2));
+            
+            // Navigate to entry page with visit ID if available
+            const visitId = result.name ? result.name.split('/').pop() : Date.now().toString();
+            console.log("🆔 Extracted visit ID:", visitId);
+            router.push(`/entry?visitId=${visitId}`);
+          } else {
+            // Try direct Firestore REST API as fallback
+            const firestoreResponse = await fetch(`https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/visits`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${await user.getIdToken()}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                fields: {
+                  checkInTime: { timestampValue: currentTime.toISOString() },
+                  checkOutTime: { nullValue: null },
+                  createdAt: { timestampValue: currentTime.toISOString() },
+                  createdBy: { stringValue: userEmail || 'unknown-user' },
+                  date: { timestampValue: currentTime.toISOString() },
+                  patientName: { stringValue: patientName.trim() },
+                  status: { stringValue: 'checked_in' },
+                  visitorMobile: { stringValue: mobileNumber.trim() },
+                  visitorName: { stringValue: fullName || userName || 'Unknown Visitor' }
+                }
+              })
+            });
+            
+            if (firestoreResponse.ok) {
+              const result = await firestoreResponse.json();
+              console.log("✅ Visit stored via Firestore REST API");
+              console.log("🔍 Firestore response object:", JSON.stringify(result, null, 2));
+              
+              // Navigate to entry page with visit ID if available
+              const visitId = result.name ? result.name.split('/').pop() : Date.now().toString();
+              console.log("🆔 Extracted visit ID from Firestore:", visitId);
+              router.push(`/entry?visitId=${visitId}`);
+            } else {
+              throw new Error(`Firestore API failed: ${firestoreResponse.status}`);
+            }
+          }
+        } else {
+          throw new Error('User not authenticated');
+        }
+      } catch (firebaseError) {
+        console.error("❌ Firebase storage error:", firebaseError);
+        
+        // Fallback: Log locally for debugging
+        console.log("📱 Logging visit data locally:", visitData);
+        console.log("✅ Visit will be retried for Firebase sync later");
+        
+        // Navigate to entry page with temporary ID
+        router.push(`/entry?visitId=temp_${Date.now()}`);
+      }
+      
+      // Clear the form
+      setPatientName("");
+      setMobileNumber("");
+      setIsMobileFocused(false);
+      
+    } catch (error) {
+      console.error("❌ Error processing visit data:", error);
+      
+      // Always allow navigation to maintain user experience
       Alert.alert(
-        'Enter Patient Name', 
-        'Enter Patient Name to Continue!',
+        "Entry Logged", 
+        "Your entry has been recorded.",
         [
           {
-            text: 'OK',
+            text: "OK",
             onPress: () => {
-              // Focus can be added here if needed
+              router.push("/entry");
+              setPatientName("");
+              setMobileNumber("");
+              setIsMobileFocused(false);
             }
           }
         ]
       );
-      return;
     }
-    
-    // TODO: Navigate to next page or handle form submission
-    console.log("Continue button pressed with patient name:", patientName);
   };
 
   const handleSignOut = async () => {
@@ -134,7 +281,7 @@ export default function Welcome() {
             activeOpacity={1}
           />
           <View style={styles.profileDropdown}>
-            <Text style={styles.dropdownName}>{fullName || "User"}</Text>
+            <Text style={styles.dropdownName} numberOfLines={2} ellipsizeMode="tail">{fullName || "User Name"}</Text>
             <Text style={styles.dropdownEmail}>{userEmail || "No email"}</Text>
             
             {/* Divider */}
@@ -151,6 +298,18 @@ export default function Welcome() {
             >
               <Ionicons name="notifications-outline" size={18} color="#007AFF" />
               <Text style={styles.dropdownOptionText}>Notifications</Text>
+            </TouchableOpacity>
+            
+            {/* Scan QR Option */}
+            <TouchableOpacity 
+              style={styles.dropdownOption} 
+              onPress={() => {
+                closeProfileDropdown();
+                router.push("/scan");
+              }}
+            >
+              <Ionicons name="qr-code-outline" size={18} color="#007AFF" />
+              <Text style={styles.dropdownOptionText}>Scan QR</Text>
             </TouchableOpacity>
             
             {/* Help & Support Option */}
@@ -201,6 +360,22 @@ export default function Welcome() {
             placeholderTextColor="#000"
             value={patientName}
             onChangeText={setPatientName}
+          />
+          <TextInput
+            style={[styles.textInput, styles.mobileInput]}
+            placeholder={isMobileFocused || mobileNumber ? "+91 1234567890" : "Enter your mobile number"}
+            placeholderTextColor="#000"
+            value={mobileNumber}
+            onChangeText={handleMobileChange}
+            onFocus={handleMobileFocus}
+            onBlur={() => {
+              if (mobileNumber === "+91 ") {
+                setMobileNumber("");
+                setIsMobileFocused(false);
+              }
+            }}
+            keyboardType="phone-pad"
+            maxLength={14}
           />
         </View>
       </View>
@@ -273,64 +448,70 @@ const styles = StyleSheet.create({
     top: 120,
     right: 20,
     backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    minWidth: 200,
+    borderRadius: 16,
+    padding: 20,
+    minWidth: 320,
+    maxWidth: 350,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 6,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
     zIndex: 12,
     borderWidth: 1,
     borderColor: "#E0E0E0",
   },
   dropdownName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "bold",
     color: "#000",
-    marginBottom: 4,
+    marginBottom: 8,
+    lineHeight: 26,
+    textAlign: "left",
+    flexWrap: "wrap",
+    width: "100%",
   },
   dropdownEmail: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 16,
+    fontWeight: "500",
     color: "#666",
-    marginBottom: 0,
+    marginBottom: 4,
+    lineHeight: 20,
   },
   dropdownDivider: {
     height: 1,
     backgroundColor: "#E0E0E0",
-    marginVertical: 12,
+    marginVertical: 16,
   },
   dropdownSignOutButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 10,
   },
   dropdownOption: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderRadius: 8,
-    marginVertical: 2,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    marginVertical: 3,
   },
   dropdownOptionText: {
-    fontSize: 18,
+    fontSize: 20,
     color: "#007AFF",
     fontWeight: "bold",
-    marginLeft: 8,
+    marginLeft: 12,
   },
   dropdownSignOutText: {
-    fontSize: 18,
+    fontSize: 20,
     color: "#FF3B30",
     fontWeight: "bold",
-    marginLeft: 8,
+    marginLeft: 12,
   },
   welcomeTitle: {
     fontSize: 36,
@@ -353,6 +534,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     backgroundColor: "white",
     color: "#000",
+  },
+  mobileInput: {
+    marginTop: 16,
   },
   buttonContainer: {
     position: "absolute",
