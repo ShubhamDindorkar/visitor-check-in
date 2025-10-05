@@ -36,18 +36,24 @@ export default function RootLayout() {
     const isOnHelpAndSupport = currentSegment === 'help-and-support';
     const isOnScan = currentSegment === 'scan';
     const isOnLogin = currentSegment === 'login';
+    const isOnManualSignIn = currentSegment === 'manual-signin';
+    const isOnEntry = currentSegment === 'entry';
     const isOnIndex = !currentSegment;
 
     // Protected screens that require authentication
-    const isOnProtectedScreen = isOnWelcome || isOnHelpAndSupport || isOnScan;
+    const isOnProtectedScreen = isOnHelpAndSupport || isOnScan;
+    // Allow welcome and entry screens for both authenticated and manual users
+    const isOnAllowedScreen = isOnWelcome || isOnEntry;
 
     if (user && (isOnLogin || isOnIndex)) {
       // User is signed in but on login/index screen, redirect to welcome
       router.replace('/welcome');
     } else if (!user && isOnProtectedScreen) {
-      // User is not signed in but trying to access protected screen, redirect to index
+      // User is not signed in but trying to access truly protected screen, redirect to index
       router.replace('/');
     }
+    // Note: We're NOT redirecting from welcome or entry screens for non-authenticated users
+    // This allows manual sign-in users to access these screens
   }, [user, segments, isLoading]);
 
   return (

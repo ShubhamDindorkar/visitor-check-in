@@ -10,7 +10,7 @@ export default function Entry() {
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const [showContent, setShowContent] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const { visitId } = useLocalSearchParams();
+  const { visitId, mobileNumber } = useLocalSearchParams();
 
   useEffect(() => {
     console.log("🔍 Entry page loaded with visitId:", visitId);
@@ -45,7 +45,13 @@ export default function Entry() {
         [
           {
             text: "OK",
-            onPress: () => router.replace("/welcome")
+            onPress: () => {
+              if (mobileNumber) {
+                router.replace(`/welcome?returnedMobileNumber=${encodeURIComponent(mobileNumber.toString())}`);
+              } else {
+                router.replace("/welcome");
+              }
+            }
           }
         ]
       );
@@ -96,7 +102,13 @@ export default function Entry() {
             [
               {
                 text: "OK",
-                onPress: () => router.replace("/welcome")
+                onPress: () => {
+                  if (mobileNumber) {
+                    router.replace(`/welcome?returnedMobileNumber=${encodeURIComponent(mobileNumber.toString())}`);
+                  } else {
+                    router.replace("/welcome");
+                  }
+                }
               }
             ]
           );
@@ -129,7 +141,13 @@ export default function Entry() {
               [
                 {
                   text: "OK",
-                  onPress: () => router.replace("/welcome")
+                  onPress: () => {
+                    if (mobileNumber) {
+                      router.replace(`/welcome?returnedMobileNumber=${encodeURIComponent(mobileNumber.toString())}`);
+                    } else {
+                      router.replace("/welcome");
+                    }
+                  }
                 }
               ]
             );
@@ -148,7 +166,13 @@ export default function Entry() {
         [
           {
             text: "OK",
-            onPress: () => router.replace("/welcome")
+            onPress: () => {
+              if (mobileNumber) {
+                router.replace(`/welcome?returnedMobileNumber=${encodeURIComponent(mobileNumber.toString())}`);
+              } else {
+                router.replace("/welcome");
+              }
+            }
           }
         ]
       );
