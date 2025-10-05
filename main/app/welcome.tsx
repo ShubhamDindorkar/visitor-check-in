@@ -1,15 +1,17 @@
 import { Text, View, StyleSheet, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { getAuth, signOut as firebaseSignOut } from '@react-native-firebase/auth';
 
 export default function Welcome() {
+  const { returnedMobileNumber, manualSignIn, fullName: manualFullName, email: manualEmail, phoneNumber: manualPhoneNumber } = useLocalSearchParams();
   const [userName, setUserName] = useState<string>("");
   const [fullName, setFullName] = useState<string>("");
   const [userEmail, setUserEmail] = useState<string>("");
+  const [profileMobileNumber, setProfileMobileNumber] = useState<string>("");
   const [patientName, setPatientName] = useState<string>("");
   const [mobileNumber, setMobileNumber] = useState<string>("");
   const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
@@ -17,8 +19,28 @@ export default function Welcome() {
   const [isMobileFocused, setIsMobileFocused] = useState<boolean>(false);
   
   useEffect(() => {
-    fetchUserName();
-  }, []);
+    // Handle manual sign-in data first
+    if (manualSignIn === "true" && manualFullName && manualEmail) {
+      setUserName(manualFullName.toString());
+      setFullName(manualFullName.toString());
+      setUserEmail(manualEmail.toString());
+      if (manualPhoneNumber) {
+        setMobileNumber(manualPhoneNumber.toString());
+        setProfileMobileNumber(manualPhoneNumber.toString());
+        setIsMobileFocused(true);
+      }
+    } else {
+      // Fetch user name from Google/Firebase if not manual sign-in
+      fetchUserName();
+    }
+    
+    // Set mobile number if returned from checkout (this will override manual phone if both exist)
+    if (returnedMobileNumber && typeof returnedMobileNumber === 'string') {
+      setMobileNumber(returnedMobileNumber);
+      setProfileMobileNumber(returnedMobileNumber);
+      setIsMobileFocused(true);
+    }
+  }, [returnedMobileNumber, manualSignIn, manualFullName, manualEmail, manualPhoneNumber]);
 
   const fetchUserName = async () => {
     try {
@@ -147,7 +169,7 @@ export default function Welcome() {
             // Navigate to entry page with visit ID if available
             const visitId = result.name ? result.name.split('/').pop() : Date.now().toString();
             console.log("🆔 Extracted visit ID:", visitId);
-            router.push(`/entry?visitId=${visitId}`);
+            router.push(`/entry?visitId=${visitId}&mobileNumber=${encodeURIComponent(mobileNumber.trim())}`);
           } else {
             // Try direct Firestore REST API as fallback
             const firestoreResponse = await fetch(`https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/visits`, {
@@ -179,7 +201,7 @@ export default function Welcome() {
               // Navigate to entry page with visit ID if available
               const visitId = result.name ? result.name.split('/').pop() : Date.now().toString();
               console.log("🆔 Extracted visit ID from Firestore:", visitId);
-              router.push(`/entry?visitId=${visitId}`);
+              router.push(`/entry?visitId=${visitId}&mobileNumber=${encodeURIComponent(mobileNumber.trim())}`);
             } else {
               throw new Error(`Firestore API failed: ${firestoreResponse.status}`);
             }
@@ -195,7 +217,7 @@ export default function Welcome() {
         console.log("✅ Visit will be retried for Firebase sync later");
         
         // Navigate to entry page with temporary ID
-        router.push(`/entry?visitId=temp_${Date.now()}`);
+        router.push(`/entry?visitId=temp_${Date.now()}&mobileNumber=${encodeURIComponent(mobileNumber.trim())}`);
       }
       
       // Clear the form
@@ -214,7 +236,7 @@ export default function Welcome() {
           {
             text: "OK",
             onPress: () => {
-              router.push("/entry");
+              router.push(`/entry?mobileNumber=${encodeURIComponent(mobileNumber.trim())}`);
               setPatientName("");
               setMobileNumber("");
               setIsMobileFocused(false);
@@ -283,6 +305,9 @@ export default function Welcome() {
           <View style={styles.profileDropdown}>
             <Text style={styles.dropdownName} numberOfLines={2} ellipsizeMode="tail">{fullName || "User Name"}</Text>
             <Text style={styles.dropdownEmail}>{userEmail || "No email"}</Text>
+            {profileMobileNumber && (
+              <Text style={styles.dropdownMobile}>{profileMobileNumber}</Text>
+            )}
             
             {/* Divider */}
             <View style={styles.dropdownDivider} />
@@ -475,6 +500,13 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   dropdownEmail: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#666",
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  dropdownMobile: {
     fontSize: 16,
     fontWeight: "500",
     color: "#666",

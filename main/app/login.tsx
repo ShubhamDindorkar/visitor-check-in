@@ -77,8 +77,8 @@ export default function Login() {
   };
 
   const handlePhoneSignIn = () => {
-    // TODO: Implement phone number authentication
-    console.log("Phone number sign in selected");
+    // Navigate to manual sign-in page
+    router.push("/manual-signin");
   };
 
   const handleQRScan = () => {
@@ -124,15 +124,11 @@ export default function Login() {
         <TouchableOpacity style={styles.authOption} onPress={handlePhoneSignIn}>
           <View style={styles.optionLeft}>
             <View style={styles.phoneIcon}>
-              <Image 
-                source={require("../assets/images/icons8-phone-50.png")} 
-                style={styles.phoneImage}
-                resizeMode="contain"
-              />
+              <Ionicons name="person-circle" size={40} color="#000" />
             </View>
             <View style={styles.optionText}>
-              <Text style={styles.optionTitle}>Continue with Phone number</Text>
-              <Text style={styles.optionSubtitle}>Sign in using email OTP verification</Text>
+              <Text style={styles.optionTitle}>Create account Manually</Text>
+              <Text style={styles.optionSubtitle}>Enter your Details to continue</Text>
             </View>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
