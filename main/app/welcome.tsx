@@ -20,10 +20,11 @@ export default function Welcome() {
   
   useEffect(() => {
     // Handle manual sign-in data first
-    if (manualSignIn === "true" && manualFullName && manualEmail) {
+    if (manualSignIn === "true" && manualFullName) {
       setUserName(manualFullName.toString());
       setFullName(manualFullName.toString());
-      setUserEmail(manualEmail.toString());
+      // For manual sign-in, set a default email or leave empty since we removed email field
+      setUserEmail(manualEmail ? manualEmail.toString() : "");
       if (manualPhoneNumber) {
         setMobileNumber(manualPhoneNumber.toString());
         setProfileMobileNumber(manualPhoneNumber.toString());

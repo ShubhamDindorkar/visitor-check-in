@@ -6,7 +6,6 @@ import { useState } from "react";
 
 export default function ManualSignIn() {
   const [fullName, setFullName] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [isPhoneFocused, setIsPhoneFocused] = useState<boolean>(false);
 
@@ -49,17 +48,6 @@ export default function ManualSignIn() {
       return;
     }
 
-    if (!email.trim()) {
-      Alert.alert("Error", "Please enter your email address");
-      return;
-    }
-
-    // Simple email validation - just check for '@' symbol
-    if (!email.trim().includes('@')) {
-      Alert.alert("Error", "Please enter a valid email address");
-      return;
-    }
-
     if (!phoneNumber.trim() || phoneNumber === "+91 ") {
       Alert.alert("Error", "Please enter your phone number");
       return;
@@ -75,7 +63,6 @@ export default function ManualSignIn() {
     // All validations passed
     const userData = {
       fullName: fullName.trim(),
-      email: email.trim(),
       phoneNumber: phoneNumber.trim()
     };
     
@@ -87,7 +74,6 @@ export default function ManualSignIn() {
       params: {
         manualSignIn: "true",
         fullName: userData.fullName,
-        email: userData.email,
         phoneNumber: userData.phoneNumber
       }
     });
@@ -116,20 +102,6 @@ export default function ManualSignIn() {
               value={fullName}
               onChangeText={setFullName}
               autoCapitalize="words"
-            />
-          </View>
-
-          {/* Email Input */}
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Email Address</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Enter your email address"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
             />
           </View>
 
