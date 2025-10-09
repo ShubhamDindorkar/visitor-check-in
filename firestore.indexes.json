@@ -1,7 +1,7 @@
 {
   "indexes": [
     {
-      "collectionGroup": "visits",
+      "collectionGroup": "visitors",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
@@ -14,6 +14,14 @@
       "fields": [
         { "fieldPath": "hostId", "order": "ASCENDING" },
         { "fieldPath": "checkInTime", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "enquiries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     }
   ],
