@@ -10,7 +10,7 @@ export default function Entry() {
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const [showContent, setShowContent] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const { visitId, mobileNumber } = useLocalSearchParams();
+  const { visitId, mobileNumber, visitorName, patientName, fromQuickCheckin } = useLocalSearchParams();
 
   useEffect(() => {
     console.log("🔍 Entry page loaded with visitId:", visitId);
@@ -37,6 +37,10 @@ export default function Entry() {
     });
   }, []);
 
+  const handleBackToDashboard = () => {
+    router.replace("/visitor-dashboard");
+  };
+
   const handleCheckout = async () => {
     if (!visitId || visitId.toString().startsWith('temp_')) {
       Alert.alert(
@@ -45,13 +49,7 @@ export default function Entry() {
         [
           {
             text: "OK",
-            onPress: () => {
-              if (mobileNumber) {
-                router.replace(`/welcome?returnedMobileNumber=${encodeURIComponent(mobileNumber.toString())}`);
-              } else {
-                router.replace("/welcome");
-              }
-            }
+            onPress: () => router.replace("/dashboard")
           }
         ]
       );
@@ -141,13 +139,7 @@ export default function Entry() {
               [
                 {
                   text: "OK",
-                  onPress: () => {
-                    if (mobileNumber) {
-                      router.replace(`/welcome?returnedMobileNumber=${encodeURIComponent(mobileNumber.toString())}`);
-                    } else {
-                      router.replace("/welcome");
-                    }
-                  }
+                  onPress: () => router.replace("/dashboard")
                 }
               ]
             );
@@ -166,13 +158,7 @@ export default function Entry() {
         [
           {
             text: "OK",
-            onPress: () => {
-              if (mobileNumber) {
-                router.replace(`/welcome?returnedMobileNumber=${encodeURIComponent(mobileNumber.toString())}`);
-              } else {
-                router.replace("/welcome");
-              }
-            }
+            onPress: () => router.replace("/dashboard")
           }
         ]
       );
@@ -198,26 +184,38 @@ export default function Entry() {
         </Animated.View>
 
         {/* Success Message */}
-        {showContent && (
-          <>
-            <Text style={styles.successTitle}>Your entry has been logged!</Text>
-            
-            {/* Checkout Button */}
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity 
-                style={[styles.checkoutButton, isCheckingOut && styles.checkoutButtonDisabled]} 
-                onPress={handleCheckout}
-                disabled={isCheckingOut}
-              >
-                {isCheckingOut ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <Text style={styles.buttonText}>Checkout</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
+          {showContent && (
+            <>
+              <Text style={styles.successTitle}>Your entry has been logged!</Text>
+              <Text style={styles.subtitle}>
+                {fromQuickCheckin === "true" 
+                  ? "Quick check-in successful!"
+                  : "Next time, just scan the QR code at reception for instant check-in!"}
+              </Text>
+              
+              {/* Action Buttons */}
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity 
+                  style={styles.dashboardButton}
+                  onPress={handleBackToDashboard}
+                >
+                  <Text style={styles.buttonText}>Back to Dashboard</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.checkoutButton, isCheckingOut && styles.checkoutButtonDisabled]} 
+                  onPress={handleCheckout}
+                  disabled={isCheckingOut}
+                >
+                  {isCheckingOut ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Text style={styles.buttonText}>Checkout</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
       </View>
     </SafeAreaView>
   );
@@ -242,12 +240,38 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#000",
     textAlign: "center",
-    marginBottom: 60,
+    marginBottom: 16,
     lineHeight: 32,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 60,
+    paddingHorizontal: 20,
+    lineHeight: 24,
   },
   buttonContainer: {
     width: "100%",
     paddingHorizontal: 20,
+    gap: 16,
+  },
+  dashboardButton: {
+    backgroundColor: "#2196F3",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 40,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
   },
   checkoutButton: {
     backgroundColor: "white",
@@ -257,7 +281,8 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 40,
     borderRadius: 12,
-    minWidth: 250,
+    borderWidth: 2,
+    borderColor: "#000",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,

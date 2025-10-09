@@ -21,11 +21,10 @@ service cloud.firestore {
 
     // --- users collection
     match /users/{uid} {
-      // Only super admins or the user themselves can create/read/update/delete as appropriate.
-      allow create: if isSuperAdmin();
-      allow read: if isSignedIn()
-                  && (isSuperAdmin() || uid == request.auth.uid || (isBranchAdmin() && request.auth.token.branchId == resource.data.branchId));
-      allow update: if isSuperAdmin() || uid == request.auth.uid;
+      // Allow users to create/read/update their own profile
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn() && request.auth.uid == uid;
       allow delete: if isSuperAdmin();
     }
 
@@ -33,6 +32,18 @@ service cloud.firestore {
     match /branches/{branchId} {
       allow read: if isSignedIn();
       allow write: if isSuperAdmin();
+    }
+
+    // --- visits collection (simplified for visitor check-in app)
+    match /visits/{visitId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn() && 
+                       (resource.data.createdBy == request.auth.uid || 
+                        isSuperAdmin() || isBranchAdmin() || isStaff());
+      allow delete: if isSignedIn() && 
+                       (resource.data.createdBy == request.auth.uid || 
+                        isSuperAdmin());
     }
 
     // --- visitors collection (documents must include branchId)
@@ -65,18 +76,22 @@ service cloud.firestore {
                     || (isSignedIn() && isBranchAdmin() && request.auth.token.branchId == resource.data.branchId);
     }
 
-    // --- enquiries collection
+    // --- enquiries collection (simplified for visitor app)
     match /enquiries/{enqId} {
-      allow create: if isSignedIn()
-                    && request.resource.data.keys().hasAll(['enquiryName','contact','branchId','createdAt','status'])
-                    && request.resource.data.branchId is string
-                    && request.resource.data.branchId.size() > 0;
-
-      allow read: if isSuperAdmin() || (isSignedIn() && request.auth.token.branchId == resource.data.branchId);
-
-      allow update: if isSuperAdmin()
-                    || (isSignedIn() && (isBranchAdmin() || isStaff()) && request.auth.token.branchId == resource.data.branchId);
-
+      // Allow any signed-in user to create enquiries
+      allow create: if isSignedIn();
+      
+      // Allow users to read their own enquiries, or admins to read all
+      allow read: if isSignedIn() && 
+                     (resource.data.createdBy == request.auth.uid || 
+                      isSuperAdmin() || isBranchAdmin() || isStaff());
+      
+      // Allow users to update their own enquiries (e.g., add replies), or admins to update any
+      allow update: if isSignedIn() && 
+                       (resource.data.createdBy == request.auth.uid || 
+                        isSuperAdmin() || isBranchAdmin() || isStaff());
+      
+      // Only admins can delete
       allow delete: if isSuperAdmin();
     }
 

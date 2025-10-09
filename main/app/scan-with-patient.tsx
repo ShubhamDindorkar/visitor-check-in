@@ -1,24 +1,23 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Platform, StyleSheet, Text, View, ActivityIndicator, TouchableOpacity } from "react-native";
+import { Alert, StyleSheet, Text, View, ActivityIndicator, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 // Try/catch import for expo-camera to handle missing module gracefully
 let CameraView: any = null;
 let useCameraPermissions: any = null;
-let BarcodeScanningResult: any = null;
 
 try {
   const cameraModule = require("expo-camera");
   CameraView = cameraModule.CameraView;
   useCameraPermissions = cameraModule.useCameraPermissions;
-  BarcodeScanningResult = cameraModule.BarcodeScanningResult;
 } catch (error) {
   console.warn("Camera module not available:", error);
 }
 
-export default function ScanScreen() {
+export default function ScanWithPatient() {
+  const { patientName } = useLocalSearchParams();
   const [cameraAvailable, setCameraAvailable] = useState<boolean>(false);
   const [permission, requestPermission] = useCameraPermissions ? useCameraPermissions() : [null, () => {}];
   const [scanned, setScanned] = useState<boolean>(false);
@@ -37,21 +36,16 @@ export default function ScanScreen() {
     
     const qrData = String(data ?? "");
     console.log("QR Code scanned:", qrData);
+    console.log("Selected patient:", patientName);
     
-    // Check if this is the reception check-in QR
-    if (qrData.includes("main://quick-checkin") || qrData.includes("quick-checkin")) {
-      // Navigate to quick check-in page - it will handle fetching saved patient info
-      router.push("/quick-checkin");
-      return;
-    }
-    
-    // For any other QR code, also use quick check-in
-    // The quick-checkin page will fetch the user's saved patient details
-    Alert.alert("Processing", "Checking you in with your saved details...");
-    setTimeout(() => {
-      router.push("/quick-checkin");
-    }, 500);
-  }, [scanned]);
+    // Navigate to quick check-in with patient name
+    router.push({
+      pathname: "/quick-checkin",
+      params: { 
+        selectedPatient: patientName?.toString() || ""
+      }
+    });
+  }, [scanned, patientName]);
 
   const handleBack = () => {
     router.back();
@@ -83,7 +77,6 @@ export default function ScanScreen() {
       <SafeAreaView style={styles.center}>
         <Text style={styles.title}>Camera access is required to scan QR codes.</Text>
         <Text style={styles.muted}>Enable camera permission in Settings and try again.</Text>
-        <Button title="Grant Permission" onPress={requestPermission} />
       </SafeAreaView>
     );
   }
@@ -94,6 +87,12 @@ export default function ScanScreen() {
       <TouchableOpacity style={styles.backButton} onPress={handleBack}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </TouchableOpacity>
+
+      {/* Selected Patient Badge */}
+      <View style={styles.patientBadge}>
+        <Ionicons name="person" size={20} color="#fff" />
+        <Text style={styles.patientBadgeText}>{patientName}</Text>
+      </View>
 
       {/* Camera View */}
       <View style={styles.scannerContainer}>
@@ -114,7 +113,7 @@ export default function ScanScreen() {
 
         {/* Instructions */}
         <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionsText}>Point camera at QR code</Text>
+          <Text style={styles.instructionsText}>Scan reception QR code</Text>
           <Text style={styles.instructionsSubtext}>Align QR code within the frame</Text>
         </View>
 
@@ -123,7 +122,7 @@ export default function ScanScreen() {
           <View style={styles.overlay}>
             <Ionicons name="checkmark-circle" size={60} color="#4CAF50" />
             <Text style={styles.overlayText}>QR Code Scanned!</Text>
-            <Text style={styles.overlaySubtext}>Processing check-in...</Text>
+            <Text style={styles.overlaySubtext}>Checking in {patientName}...</Text>
           </View>
         )}
 
@@ -176,6 +175,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     zIndex: 10,
+  },
+  patientBadge: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2196F3",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    zIndex: 10,
+    gap: 8,
+  },
+  patientBadgeText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
   muted: {
     color: "#999",
@@ -283,3 +300,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+
