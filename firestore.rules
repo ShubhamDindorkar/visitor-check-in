@@ -1,39 +1,107 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() { return request.auth != null; }
-    function isAdmin() { return isSignedIn() && request.auth.token.role == 'admin'; }
-    function isHost() { return isSignedIn() && request.auth.token.role == 'host'; }
-    function isReceptionist() { return isSignedIn() && request.auth.token.role == 'receptionist'; }
 
-    match /users/{userId} {
-      allow create: if isAdmin();
+    // --- helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && request.auth.token.role == 'super_admin';
+    }
+
+    function isBranchAdmin() {
+      return isSignedIn() && request.auth.token.role == 'branch_admin';
+    }
+
+    function isStaff() {
+      return isSignedIn() && request.auth.token.role == 'staff';
+    }
+
+    // --- users collection
+    match /users/{uid} {
+      // Only super admins or the user themselves can create/read/update/delete as appropriate.
+      allow create: if isSuperAdmin();
+      allow read: if isSignedIn()
+                  && (isSuperAdmin() || uid == request.auth.uid || (isBranchAdmin() && request.auth.token.branchId == resource.data.branchId));
+      allow update: if isSuperAdmin() || uid == request.auth.uid;
+      allow delete: if isSuperAdmin();
+    }
+
+    // --- branches collection (optional)
+    match /branches/{branchId} {
       allow read: if isSignedIn();
-      allow update: if isAdmin() || (request.auth.uid == userId);
-      allow delete: if isAdmin();
+      allow write: if isSuperAdmin();
     }
 
-    match /visits/{visitId} {
-      allow create: if isSignedIn() && (isReceptionist() || isAdmin());
-      allow read: if isAdmin() || isReceptionist() || (isHost() && resource.data.hostId == request.auth.uid);
-      allow update: if isAdmin() ||
-                    (isReceptionist()) ||
-                    (isHost() && resource.data.hostId == request.auth.uid &&
-                      request.resource.data.keys().hasOnly(['checkOutTime','status','updatedAt']) &&
-                      (request.resource.data.status in ['checked_out','checked_in','cancelled']));
-      allow delete: if isAdmin();
+    // --- visitors collection (documents must include branchId)
+    match /visitors/{visitId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.keys().hasAll(['visitorName','visitorMobile','status','branchId','checkInTime'])
+                    // branchId must be present and non-empty
+                    && request.resource.data.branchId is string
+                    && request.resource.data.branchId.size() > 0
+                    // allow creation by: super admin, branch admin/staff for the branch, or the visitor themself
+                    && (
+                         isSuperAdmin()
+                      || (isBranchAdmin() && request.auth.token.branchId == request.resource.data.branchId)
+                      || (isStaff() && request.auth.token.branchId == request.resource.data.branchId)
+                      || request.auth.uid == request.resource.data.visitorId
+                      );
+
+      allow read: if isSuperAdmin()
+                  || (isSignedIn() && request.auth.token.branchId == resource.data.branchId)
+                  || (isSignedIn() && request.auth.uid == resource.data.visitorId);
+
+      allow update: if isSuperAdmin()
+                    // Branch admins/staff for the branch can update any visitor fields
+                    || (isSignedIn() && (isBranchAdmin() || isStaff()) && request.auth.token.branchId == resource.data.branchId)
+                    // Visitor can only update limited checkout fields on their own record
+                    || (isSignedIn() && request.auth.uid == resource.data.visitorId
+                        && request.resource.data.keys().hasOnly(['checkOutTime','status','updatedAt']));
+
+      allow delete: if isSuperAdmin()
+                    || (isSignedIn() && isBranchAdmin() && request.auth.token.branchId == resource.data.branchId);
     }
 
-    match /hosts/{hostDoc} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+    // --- enquiries collection
+    match /enquiries/{enqId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.keys().hasAll(['enquiryName','contact','branchId','createdAt','status'])
+                    && request.resource.data.branchId is string
+                    && request.resource.data.branchId.size() > 0;
+
+      allow read: if isSuperAdmin() || (isSignedIn() && request.auth.token.branchId == resource.data.branchId);
+
+      allow update: if isSuperAdmin()
+                    || (isSignedIn() && (isBranchAdmin() || isStaff()) && request.auth.token.branchId == resource.data.branchId);
+
+      allow delete: if isSuperAdmin();
     }
 
-    match /settings/{doc} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+    // --- timeline subcollections (under visitors/{id}/timeline or enquiries/{id}/timeline)
+    match /{parentCollection=**}/timeline/{eventId} {
+      // For create: ensure branchId is provided and matches caller (unless super admin)
+      allow create: if isSignedIn()
+                    && request.resource.data.keys().hasAll(['event','actor','timestamp','branchId'])
+                    && request.resource.data.branchId is string
+                    && request.resource.data.branchId.size() > 0
+                    && (
+                         isSuperAdmin()
+                      || request.auth.token.branchId == request.resource.data.branchId
+                      );
+
+      // For read: allow super admins, branch members for the branch of the event, or the actor themself
+      allow read: if isSuperAdmin()
+                  || (isSignedIn() && request.auth.token.branchId == resource.data.branchId)
+                  || (isSignedIn() && request.auth.uid == resource.data.actor);
+
+      // Do not allow updates/deletes to timeline events
+      allow update, delete: if false;
     }
 
+    // Deny everything else
     match /{document=**} {
       allow read, write: if false;
     }
