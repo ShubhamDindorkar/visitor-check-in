@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: "#2196F3",
+    backgroundColor: "#1C4B46",
   },
   editButtonText: {
     fontSize: 16,
@@ -678,9 +678,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   selectedPatientCard: {
-    backgroundColor: "#E3F2FD",
+    backgroundColor: "#E8F5E9",
     borderWidth: 2,
-    borderColor: "#2196F3",
+    borderColor: "#1C4B46",
   },
   radioContainer: {
     marginRight: 12,
@@ -696,14 +696,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   radioButtonSelected: {
-    backgroundColor: "#2196F3",
-    borderColor: "#2196F3",
+    backgroundColor: "#1C4B46",
+    borderColor: "#1C4B46",
   },
   patientIconContainer: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#E3F2FD",
+    backgroundColor: "#E8F5E9",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
@@ -731,15 +731,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#2196F3",
-    paddingVertical: 16,
-    borderRadius: 12,
+    backgroundColor: "#1C4B46",
+    paddingVertical: 18,
+    borderRadius: 28,
     gap: 8,
+    shadowColor: "#1C4B46",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   addPatientText: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "600",
+    letterSpacing: 0.5,
   },
 });
 

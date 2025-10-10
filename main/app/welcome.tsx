@@ -1,4 +1,4 @@
-import { Text, View, StyleSheet, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, Platform } from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, Platform, ScrollView, KeyboardAvoidingView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,8 +17,14 @@ export default function Welcome() {
   const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState<boolean>(false);
   const [isMobileFocused, setIsMobileFocused] = useState<boolean>(false);
-  const [visitTime, setVisitTime] = useState<string>("");
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isCheckingProfile, setIsCheckingProfile] = useState<boolean>(true);
+  const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
   
+  useEffect(() => {
+    checkProfileStatus();
+  }, []);
+
   useEffect(() => {
     // Handle manual sign-in data first
     if (manualSignIn === "true" && manualFullName) {
@@ -41,6 +47,66 @@ export default function Welcome() {
       setIsMobileFocused(true);
     }
   }, [returnedMobileNumber, manualSignIn, manualFullName, manualEmail, manualPhoneNumber]);
+
+  const checkProfileStatus = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user) {
+        setIsCheckingProfile(false);
+        return;
+      }
+
+      // Check if user has completed their profile
+      if (Platform.OS === 'web') {
+        const token = await user.getIdToken();
+        const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
+        
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const docData = await response.json();
+          const profileComplete = docData.fields?.isProfileComplete?.booleanValue === true;
+          
+          if (profileComplete) {
+            // Profile is complete, redirect immediately
+            router.replace('/user-type');
+            return;
+          }
+        }
+      } else {
+        try {
+          if (firestore && typeof firestore === 'function') {
+            const userDoc = await firestore()
+              .collection('users')
+              .doc(user.uid)
+              .get();
+            
+            const userData = userDoc.data();
+            const profileComplete = userData?.isProfileComplete === true;
+            
+            if (profileComplete) {
+              // Profile is complete, redirect immediately
+              router.replace('/user-type');
+              return;
+            }
+          }
+        } catch (error) {
+          console.warn('Error checking profile:', error);
+        }
+      }
+      
+      setIsCheckingProfile(false);
+    } catch (error) {
+      console.error('Error checking profile status:', error);
+      setIsCheckingProfile(false);
+    }
+  };
 
   const fetchUserName = async () => {
     try {
@@ -106,20 +172,6 @@ export default function Welcome() {
     }
   };
 
-  const handleCheckInPatients = () => {
-    // Navigate to patient selection/check-in screen
-    router.push("/select-patient");
-  };
-
-  const handleScanQR = () => {
-    // Navigate to QR scan screen
-    router.push("/scan");
-  };
-
-  const handleManageVisits = () => {
-    // Navigate to visitor dashboard to manage visits
-    router.push("/visitor-dashboard");
-  };
 
   const saveProfileData = async () => {
     try {
@@ -137,7 +189,6 @@ export default function Welcome() {
         visitorEmail: userEmail || user.email || '',
         visitorMobile: mobileNumber.trim(),
         defaultPatientName: patientName.trim(),
-        visitTime: visitTime,
         isProfileComplete: true,
       };
 
@@ -152,7 +203,6 @@ export default function Welcome() {
           visitorEmail: { stringValue: profileData.visitorEmail || '' },
           visitorMobile: { stringValue: profileData.visitorMobile },
           defaultPatientName: { stringValue: profileData.defaultPatientName },
-          visitTime: { stringValue: profileData.visitTime || '' },
           isProfileComplete: { booleanValue: true },
           createdAt: { timestampValue: now },
           updatedAt: { timestampValue: now }
@@ -202,7 +252,6 @@ export default function Welcome() {
             visitorEmail: { stringValue: profileData.visitorEmail || '' },
             visitorMobile: { stringValue: profileData.visitorMobile },
             defaultPatientName: { stringValue: profileData.defaultPatientName },
-            visitTime: { stringValue: profileData.visitTime || '' },
             isProfileComplete: { booleanValue: true },
             createdAt: { timestampValue: now },
             updatedAt: { timestampValue: now }
@@ -275,11 +324,59 @@ export default function Welcome() {
     setShowProfileDropdown(false);
   };
 
+  const handleContinue = async () => {
+    if (!patientName.trim()) {
+      Alert.alert("Required", "Please enter patient name");
+      return;
+    }
+    if (!mobileNumber.trim() || mobileNumber === "+91 ") {
+      Alert.alert("Required", "Please enter your mobile number");
+      return;
+    }
+    const mobileRegex = /^\+91 \d{10}$/;
+    if (!mobileRegex.test(mobileNumber)) {
+      Alert.alert("Invalid", "Please enter a valid 10-digit mobile number");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await saveProfileData();
+      Alert.alert(
+        "Success",
+        "Profile saved successfully!",
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/user-type")
+          }
+        ]
+      );
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      Alert.alert("Error", "Failed to save profile. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Show loading while checking profile
+  if (isCheckingProfile) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="white" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Profile Icon and Dropdown */}
+      {/* Profile Icon */}
       <TouchableOpacity style={styles.profileButton} onPress={toggleProfileDropdown}>
-        <Ionicons name="person-circle" size={40} color="#000" />
+        <Ionicons name="person-circle" size={32} color="white" />
       </TouchableOpacity>
 
       {/* Profile Dropdown */}
@@ -297,23 +394,8 @@ export default function Welcome() {
               <Text style={styles.dropdownMobile}>{mobileNumber}</Text>
             )}
             
-            {/* Divider */}
             <View style={styles.dropdownDivider} />
             
-            {/* Notifications Option */}
-            <TouchableOpacity 
-              style={styles.dropdownOption} 
-              onPress={() => {
-                // TODO: Navigate to notifications
-                console.log("Notifications pressed");
-                closeProfileDropdown();
-              }}
-            >
-              <Ionicons name="notifications-outline" size={18} color="#007AFF" />
-              <Text style={styles.dropdownOptionText}>Notifications</Text>
-            </TouchableOpacity>
-            
-            {/* Scan QR Option */}
             <TouchableOpacity 
               style={styles.dropdownOption} 
               onPress={() => {
@@ -321,11 +403,10 @@ export default function Welcome() {
                 router.push("/scan");
               }}
             >
-              <Ionicons name="qr-code-outline" size={18} color="#007AFF" />
+              <Ionicons name="qr-code-outline" size={18} color="#1C4B46" />
               <Text style={styles.dropdownOptionText}>Scan QR</Text>
             </TouchableOpacity>
             
-            {/* Help & Support Option */}
             <TouchableOpacity 
               style={styles.dropdownOption} 
               onPress={() => {
@@ -333,14 +414,12 @@ export default function Welcome() {
                 router.push("/help-and-support");
               }}
             >
-              <Ionicons name="help-circle-outline" size={18} color="#007AFF" />
+              <Ionicons name="help-circle-outline" size={18} color="#1C4B46" />
               <Text style={styles.dropdownOptionText}>Help & Support</Text>
             </TouchableOpacity>
             
-            {/* Divider */}
             <View style={styles.dropdownDivider} />
             
-            {/* Sign Out Option */}
             <TouchableOpacity 
               style={styles.dropdownSignOutButton} 
               onPress={handleSignOut}
@@ -359,93 +438,99 @@ export default function Welcome() {
         </>
       )}
 
-      <View style={styles.content}>
-        {/* Welcome Message */}
-        <Text style={styles.welcomeTitle}>
-          Welcome, {userName ? `${userName}!` : "..."}
-        </Text>
-        
-        {/* Input Fields - Patient name and mobile number */}
-        <View style={styles.inputContainer}>
-          {/* Patient Name Input */}
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Patient Name</Text>
-          <TextInput
-            style={styles.textInput}
-            placeholder="Enter patient name"
-              placeholderTextColor="#999"
-            value={patientName}
-            onChangeText={setPatientName}
-              autoCapitalize="words"
-          />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Top Section with Dark Teal Background */}
+          <View style={styles.topSection}>
+            {/* Welcome Icon */}
+            <View style={styles.iconContainer}>
+              <Ionicons name="person-add" size={40} color="white" />
+            </View>
+
+            {/* Title */}
+            <Text style={styles.title}>Welcome,</Text>
+            <Text style={styles.title}>{userName || "Visitor"}!</Text>
+
+            {/* Subtitle */}
+            <Text style={styles.subtitle}>
+              Let's set up your profile for quick check-ins
+            </Text>
           </View>
 
-          {/* Mobile Number Input */}
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Your Mobile Number</Text>
-          <TextInput
-              style={styles.textInput}
-            placeholder={isMobileFocused || mobileNumber ? "+91 1234567890" : "Enter your mobile number"}
-              placeholderTextColor="#999"
-            value={mobileNumber}
-            onChangeText={handleMobileChange}
-            onFocus={handleMobileFocus}
-            onBlur={() => {
-              if (mobileNumber === "+91 ") {
-                setMobileNumber("");
-                setIsMobileFocused(false);
-              }
-            }}
-            keyboardType="phone-pad"
-            maxLength={14}
-          />
+          {/* White Form Container */}
+          <View style={styles.formContainer}>
+            {/* Patient Name Input */}
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Default Patient Name</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Enter patient full name"
+                placeholderTextColor="#A0A0A0"
+                value={patientName}
+                onChangeText={setPatientName}
+                autoCapitalize="words"
+                editable={!isSaving}
+              />
+            </View>
+
+            {/* Mobile Number Input */}
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Your Mobile Number</Text>
+              <View style={styles.mobileInputContainer}>
+                <Ionicons name="call-outline" size={20} color="#8B9E9C" style={styles.mobileIcon} />
+                <TextInput
+                  style={styles.mobileInput}
+                  placeholder={isMobileFocused || mobileNumber ? "+91 1234567890" : "Enter mobile number"}
+                  placeholderTextColor="#A0A0A0"
+                  value={mobileNumber}
+                  onChangeText={handleMobileChange}
+                  onFocus={handleMobileFocus}
+                  onBlur={() => {
+                    if (mobileNumber === "+91 ") {
+                      setMobileNumber("");
+                      setIsMobileFocused(false);
+                    }
+                  }}
+                  keyboardType="phone-pad"
+                  maxLength={14}
+                  editable={!isSaving}
+                />
+              </View>
+            </View>
+
+            {/* Continue Button */}
+            <TouchableOpacity 
+              style={[styles.continueButton, isSaving && styles.buttonDisabled]} 
+              onPress={handleContinue}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={24} color="white" style={styles.buttonIcon} />
+                  <Text style={styles.buttonText}>Continue</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* Info Box */}
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle-outline" size={20} color="#1C4B46" />
+              <Text style={styles.infoText}>
+                This information will be used for quick check-ins in the future
+              </Text>
+            </View>
           </View>
-
-          {/* Visit Time Input */}
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Select Visit Time</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Enter visit time (e.g., 10:00 AM)"
-              placeholderTextColor="#999"
-              value={visitTime}
-              onChangeText={setVisitTime}
-            />
-          </View>
-        </View>
-
-        {/* Visitor Check-in Section */}
-        <View style={styles.checkInSection}>
-          <Text style={styles.sectionTitle}>Visitor Check-in</Text>
-          
-          <TouchableOpacity 
-            style={styles.checkInButton}
-            onPress={handleCheckInPatients}
-          >
-            <Ionicons name="person-add" size={20} color="#4CAF50" />
-            <Text style={styles.checkInButtonText}>Check-in Patients</Text>
-            <Ionicons name="chevron-forward" size={18} color="#8E8E93" />
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.checkInButton}
-            onPress={handleScanQR}
-          >
-            <Ionicons name="qr-code" size={20} color="#4CAF50" />
-            <Text style={styles.checkInButtonText}>Scan QR</Text>
-            <Ionicons name="chevron-forward" size={18} color="#8E8E93" />
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.checkInButton}
-            onPress={handleManageVisits}
-          >
-            <Ionicons name="clipboard" size={20} color="#4CAF50" />
-            <Text style={styles.checkInButtonText}>Manage Visits</Text>
-            <Ionicons name="chevron-forward" size={18} color="#8E8E93" />
-          </TouchableOpacity>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -453,31 +538,33 @@ export default function Welcome() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: "#1C4B46",
   },
-  content: {
+  loadingContainer: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    zIndex: 2,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "white",
+    fontWeight: "500",
   },
   profileButton: {
     position: "absolute",
-    top: 60,
+    top: 50,
     right: 20,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#f5f5f5",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 10,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -491,18 +578,15 @@ const styles = StyleSheet.create({
   },
   profileDropdown: {
     position: "absolute",
-    top: 120,
+    top: 100,
     right: 20,
     backgroundColor: "white",
     borderRadius: 16,
     padding: 20,
-    minWidth: 320,
-    maxWidth: 350,
+    minWidth: 280,
+    maxWidth: 320,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 8,
@@ -511,152 +595,184 @@ const styles = StyleSheet.create({
     borderColor: "#E0E0E0",
   },
   dropdownName: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "bold",
     color: "#000",
-    marginBottom: 8,
-    lineHeight: 26,
-    textAlign: "left",
-    flexWrap: "wrap",
-    width: "100%",
+    marginBottom: 4,
   },
   dropdownEmail: {
-    fontSize: 16,
-    fontWeight: "500",
+    fontSize: 14,
     color: "#666",
     marginBottom: 4,
-    lineHeight: 20,
   },
   dropdownMobile: {
-    fontSize: 16,
-    fontWeight: "500",
+    fontSize: 14,
     color: "#666",
     marginBottom: 4,
-    lineHeight: 20,
   },
   dropdownDivider: {
     height: 1,
     backgroundColor: "#E0E0E0",
-    marginVertical: 16,
-  },
-  dropdownSignOutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 10,
+    marginVertical: 12,
   },
   dropdownOption: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 8,
-    borderRadius: 10,
-    marginVertical: 3,
   },
   dropdownOptionText: {
-    fontSize: 20,
-    color: "#007AFF",
-    fontWeight: "bold",
-    marginLeft: 12,
-  },
-  dropdownSignOutText: {
-    fontSize: 20,
-    color: "#FF3B30",
-    fontWeight: "bold",
-    marginLeft: 12,
-  },
-  welcomeTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#000",
-    textAlign: "left",
-    marginBottom: 12,
-  },
-  inputContainer: {
-    marginTop: 8,
-    width: "100%",
-  },
-  inputWrapper: {
-    marginBottom: 12,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#2C2C2E",
-    marginBottom: 6,
-  },
-  textInput: {
-    width: "100%",
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 15,
-    backgroundColor: "white",
-    color: "#000",
-  },
-  checkInSection: {
-    marginTop: 16,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
-  },
-  sectionTitle: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#2C2C2E",
-    marginBottom: 10,
+    color: "#1C4B46",
+    fontWeight: "600",
+    marginLeft: 12,
   },
-  checkInButton: {
+  dropdownSignOutButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "white",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  dropdownSignOutText: {
+    fontSize: 16,
+    color: "#FF3B30",
+    fontWeight: "600",
+    marginLeft: 12,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  topSection: {
+    backgroundColor: "#1C4B46",
+    paddingTop: 80,
+    paddingHorizontal: 28,
+    paddingBottom: 50,
+  },
+  iconContainer: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "white",
+    textAlign: "center",
+    lineHeight: 38,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "white",
+    textAlign: "center",
+    marginTop: 16,
+    lineHeight: 22,
+    opacity: 0.9,
+  },
+  formContainer: {
+    backgroundColor: "#FAFAFA",
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    marginTop: -20,
+    paddingTop: 40,
+    paddingHorizontal: 28,
+    paddingBottom: 60,
+    minHeight: '65%',
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: -4,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  checkInButtonText: {
-    flex: 1,
-    fontSize: 15,
+  inputWrapper: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
     fontWeight: "600",
     color: "#2C2C2E",
-    marginLeft: 10,
+    marginBottom: 8,
   },
-  signOutButton: {
-    backgroundColor: "black",
+  textInput: {
+    width: "100%",
+    height: 56,
+    borderWidth: 1.5,
+    borderColor: "#E0E0E0",
+    borderRadius: 28,
+    paddingHorizontal: 20,
+    fontSize: 16,
+    backgroundColor: "white",
+    color: "#333",
+  },
+  mobileInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    height: 56,
+    borderWidth: 1.5,
+    borderColor: "#E0E0E0",
+    borderRadius: 28,
+    backgroundColor: "white",
+    paddingHorizontal: 20,
+  },
+  mobileIcon: {
+    marginRight: 10,
+  },
+  mobileInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+  },
+  continueButton: {
+    width: "100%",
+    height: 56,
+    backgroundColor: "#1C4B46",
+    borderRadius: 28,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 20,
-    paddingHorizontal: 40,
-    borderRadius: 12,
-    minWidth: 250,
     marginTop: 16,
-    shadowColor: "#000",
+    marginBottom: 20,
+    shadowColor: "#1C4B46",
     shadowOffset: {
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 6,
   },
-  signOutButtonText: {
+  buttonDisabled: {
+    backgroundColor: "#8B9E9C",
+    shadowOpacity: 0.1,
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  buttonText: {
     color: "white",
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  infoBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E3F2FD",
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#BBDEFB",
+  },
+  infoText: {
+    fontSize: 14,
+    color: "#1C4B46",
+    marginLeft: 10,
+    flex: 1,
+    lineHeight: 20,
   },
 });

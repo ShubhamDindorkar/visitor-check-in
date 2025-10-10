@@ -5,10 +5,10 @@ import { useEffect } from "react";
 
 export default function Home() {
   useEffect(() => {
-    // Automatically navigate to login screen after 1.5 seconds
+    // Navigate to login screen after 2 seconds
     const timer = setTimeout(() => {
-      router.push("/login");
-    }, 1500);
+      router.replace("/login");
+    }, 2000);
 
     // Cleanup timer on component unmount
     return () => clearTimeout(timer);
@@ -16,8 +16,7 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Main Logo */}
-      <View style={styles.iconContainer}>
+      <View style={styles.logoContainer}>
         <Image
           source={require("../assets/images/logo.png")}
           style={styles.logoImage}
@@ -31,12 +30,11 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: "#1C4B46",
     justifyContent: "center",
     alignItems: "center",
-    padding: 40,
   },
-  iconContainer: {
+  logoContainer: {
     alignItems: "center",
     justifyContent: "center",
   },

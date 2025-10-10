@@ -204,9 +204,9 @@ export default function Entry() {
                   disabled={isCheckingOut}
                 >
                   {isCheckingOut ? (
-                    <ActivityIndicator size="small" color="white" />
+                    <ActivityIndicator size="small" color="#1C4B46" />
                   ) : (
-                    <Text style={styles.buttonText}>Checkout</Text>
+                    <Text style={styles.checkoutButtonText}>Checkout</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -253,48 +253,56 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   dashboardButton: {
-    backgroundColor: "#2196F3",
+    backgroundColor: "#1C4B46",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 20,
+    paddingVertical: 18,
     paddingHorizontal: 40,
-    borderRadius: 12,
-    shadowColor: "#000",
+    borderRadius: 28,
+    shadowColor: "#1C4B46",
     shadowOffset: {
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 6,
   },
   checkoutButton: {
     backgroundColor: "white",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 20,
+    paddingVertical: 18,
     paddingHorizontal: 40,
-    borderRadius: 12,
+    borderRadius: 28,
     borderWidth: 2,
-    borderColor: "#000",
+    borderColor: "#1C4B46",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 4,
   },
   checkoutButtonDisabled: {
     backgroundColor: "#F0F0F0",
+    borderColor: "#ccc",
     shadowOpacity: 0.05,
   },
   buttonText: {
-    color: "black",
+    color: "white",
     fontSize: 20,
     fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  checkoutButtonText: {
+    color: "#1C4B46",
+    fontSize: 20,
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
 });

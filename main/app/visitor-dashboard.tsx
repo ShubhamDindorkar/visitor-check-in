@@ -87,19 +87,15 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with Back Button */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        
-        <Text style={styles.headerTitle}>Visitor Dashboard</Text>
-        
-        {/* Profile Icon */}
-        <TouchableOpacity style={styles.profileButtonHeader} onPress={toggleProfileDropdown}>
-          <Ionicons name="person-circle" size={32} color="#4CAF50" />
-        </TouchableOpacity>
-      </View>
+      {/* Back Button */}
+      <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+        <Ionicons name="arrow-back" size={24} color="#000" />
+      </TouchableOpacity>
+
+      {/* Profile Icon */}
+      <TouchableOpacity style={styles.profileButton} onPress={toggleProfileDropdown}>
+        <Ionicons name="person-circle" size={40} color="#1C4B46" />
+      </TouchableOpacity>
 
       {/* Profile Dropdown */}
       {showProfileDropdown && (
@@ -153,24 +149,26 @@ export default function Dashboard() {
         <View style={styles.actionButtonsContainer}>
           {/* Scan QR Button - Primary Action */}
           <TouchableOpacity 
-            style={[styles.actionButton, styles.primaryButton]} 
+            style={styles.primaryActionButton} 
             onPress={handleScanQR}
           >
-            <View style={styles.iconCircle}>
-              <Ionicons name="qr-code-outline" size={50} color="#4CAF50" />
+            <View style={styles.buttonContentContainer}>
+              <Ionicons name="qr-code-outline" size={64} color="white" />
+              <Text style={styles.primaryButtonText}>Scan QR Code</Text>
+              <Text style={styles.buttonSubtext}>Scan reception QR to check in</Text>
             </View>
-            <Text style={styles.actionButtonTitle}>Scan QR Code</Text>
           </TouchableOpacity>
 
           {/* Add Patient Button */}
           <TouchableOpacity 
-            style={[styles.actionButton, styles.secondaryButton]} 
+            style={styles.secondaryActionButton} 
             onPress={handleAddPatient}
           >
-            <View style={styles.iconCircle}>
-              <Ionicons name="person-add-outline" size={50} color="#2196F3" />
+            <View style={styles.buttonContentContainer}>
+              <Ionicons name="person-add-outline" size={64} color="#1C4B46" />
+              <Text style={styles.secondaryButtonText}>Add New Patient</Text>
+              <Text style={styles.secondaryButtonSubtext}>Register a new patient visit</Text>
             </View>
-            <Text style={styles.actionButtonTitle}>Add Patient</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -183,36 +181,44 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9fa",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#f5f5f5",
+    position: "absolute",
+    top: 60,
+    left: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  profileButtonHeader: {
-    padding: 4,
+  profileButton: {
+    position: "absolute",
+    top: 60,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 20,
     alignItems: "center",
   },
   dropdownOverlay: {
@@ -225,7 +231,7 @@ const styles = StyleSheet.create({
   },
   profileDropdown: {
     position: "absolute",
-    top: 70,
+    top: 120,
     right: 20,
     backgroundColor: "white",
     borderRadius: 16,
@@ -296,40 +302,67 @@ const styles = StyleSheet.create({
   },
   actionButtonsContainer: {
     width: "100%",
-    gap: 20,
-  },
-  actionButton: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 24,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  primaryButton: {
-    borderWidth: 2,
-    borderColor: "#4CAF50",
-  },
-  secondaryButton: {
-    borderWidth: 2,
-    borderColor: "#2196F3",
-  },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#f8f9fa",
+    gap: 24,
+    flex: 1,
     justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
   },
-  actionButtonTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#000",
+  primaryActionButton: {
+    backgroundColor: "#1C4B46",
+    borderRadius: 24,
+    padding: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 200,
+    shadowColor: "#1C4B46",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  secondaryActionButton: {
+    backgroundColor: "white",
+    borderRadius: 24,
+    padding: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 200,
+    borderWidth: 2.5,
+    borderColor: "#1C4B46",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  buttonContentContainer: {
+    alignItems: "center",
+    gap: 12,
+  },
+  primaryButtonText: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "white",
+    letterSpacing: 0.5,
+    marginTop: 8,
+  },
+  secondaryButtonText: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1C4B46",
+    letterSpacing: 0.5,
+    marginTop: 8,
+  },
+  buttonSubtext: {
+    fontSize: 15,
+    color: "rgba(255, 255, 255, 0.85)",
+    textAlign: "center",
+    marginTop: 4,
+  },
+  secondaryButtonSubtext: {
+    fontSize: 15,
+    color: "#5D6D69",
+    textAlign: "center",
+    marginTop: 4,
   },
 });
 

@@ -6,12 +6,12 @@ import { useState } from "react";
 import { getAuth } from '@react-native-firebase/auth';
 import firestore from "@react-native-firebase/firestore";
 
-export default function AddPatient() {
-  const [patientName, setPatientName] = useState("");
+export default function AddEnquiry() {
+  const [enquirerName, setEnquirerName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
+  const [patientName, setPatientName] = useState("");
   const [isMobileFocused, setIsMobileFocused] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [setAsDefault, setSetAsDefault] = useState(false);
 
   const handleBack = () => {
     router.back();
@@ -42,8 +42,8 @@ export default function AddPatient() {
   };
 
   const handleContinue = async () => {
-    if (!patientName.trim()) {
-      Alert.alert("Error", "Please enter patient name");
+    if (!enquirerName.trim()) {
+      Alert.alert("Error", "Please enter your name");
       return;
     }
     
@@ -55,6 +55,11 @@ export default function AddPatient() {
     const mobileRegex = /^\+91 \d{10}$/;
     if (!mobileRegex.test(mobileNumber)) {
       Alert.alert("Error", "Please enter a valid 10-digit mobile number");
+      return;
+    }
+
+    if (!patientName.trim()) {
+      Alert.alert("Error", "Please enter patient name");
       return;
     }
 
@@ -70,30 +75,28 @@ export default function AddPatient() {
       }
 
       const currentTime = new Date();
-      let visitId: string;
+      let enquiryId: string;
       
-      // Use platform-aware approach for adding patient visit
+      // Use platform-aware approach for adding enquiry
       if (Platform.OS === 'web') {
         // Use Firestore REST API for web
         const token = await user.getIdToken();
         const now = new Date().toISOString();
         
-        // Generate a unique ID for the visit document
-        visitId = `visit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        // Generate a unique ID for the enquiry document
+        enquiryId = `enquiry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
         const fields = {
-          visitorName: { stringValue: user.displayName || 'Visitor' },
-          visitorMobile: { stringValue: mobileNumber.trim() },
+          enquirerName: { stringValue: enquirerName.trim() },
+          enquirerMobile: { stringValue: mobileNumber.trim() },
           patientName: { stringValue: patientName.trim() },
-          status: { stringValue: 'checked_in' },
-          checkInTime: { timestampValue: now },
+          status: { stringValue: 'pending' },
           createdAt: { timestampValue: now },
-          date: { timestampValue: now },
           createdBy: { stringValue: user.uid },
           _manualEntry: { booleanValue: true }
         };
 
-        const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/visits/${visitId}`;
+        const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/enquiries/${enquiryId}`;
         const response = await fetch(url, {
           method: 'PATCH',
           headers: {
@@ -108,27 +111,25 @@ export default function AddPatient() {
           throw new Error(`Firestore REST save failed: ${response.status} ${text}`);
         }
         
-        console.log("✅ Patient visit added via REST API:", visitId);
+        console.log("✅ Enquiry added via REST API:", enquiryId);
       } else {
         // Try native SDK first, with REST fallback
         try {
           if (firestore && typeof firestore === 'function') {
             const ts = firestore.FieldValue.serverTimestamp();
             
-            const docRef = await firestore().collection('visits').add({
-              visitorName: user.displayName || 'Visitor',
-              visitorMobile: mobileNumber.trim(),
+            const docRef = await firestore().collection('enquiries').add({
+              enquirerName: enquirerName.trim(),
+              enquirerMobile: mobileNumber.trim(),
               patientName: patientName.trim(),
-              status: 'checked_in',
-              checkInTime: ts,
+              status: 'pending',
               createdAt: ts,
-              date: ts,
               createdBy: user.uid,
               _manualEntry: true,
             });
 
-            visitId = docRef.id;
-            console.log("✅ Patient visit added via native SDK:", visitId);
+            enquiryId = docRef.id;
+            console.log("✅ Enquiry added via native SDK:", enquiryId);
           } else {
             throw new Error('Native Firestore not available');
           }
@@ -138,22 +139,19 @@ export default function AddPatient() {
           const token = await user.getIdToken();
           const now = new Date().toISOString();
           
-          // Generate a unique ID for the visit document
-          visitId = `visit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          enquiryId = `enquiry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           
           const fields = {
-            visitorName: { stringValue: user.displayName || 'Visitor' },
-            visitorMobile: { stringValue: mobileNumber.trim() },
+            enquirerName: { stringValue: enquirerName.trim() },
+            enquirerMobile: { stringValue: mobileNumber.trim() },
             patientName: { stringValue: patientName.trim() },
-            status: { stringValue: 'checked_in' },
-            checkInTime: { timestampValue: now },
+            status: { stringValue: 'pending' },
             createdAt: { timestampValue: now },
-            date: { timestampValue: now },
             createdBy: { stringValue: user.uid },
             _manualEntry: { booleanValue: true }
           };
 
-          const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/visits/${visitId}`;
+          const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/enquiries/${enquiryId}`;
           const response = await fetch(url, {
             method: 'PATCH',
             headers: {
@@ -168,142 +166,25 @@ export default function AddPatient() {
             throw new Error(`Firestore REST fallback save failed: ${response.status} ${text}`);
           }
           
-          console.log("✅ Patient visit added via REST fallback:", visitId);
+          console.log("✅ Enquiry added via REST fallback:", enquiryId);
         }
       }
 
-      // Update user profile if this patient should be set as default
-      if (setAsDefault) {
-        await updateDefaultPatient(user.uid, patientName.trim());
-        Alert.alert(
-          "Success", 
-          `${patientName.trim()} has been set as your default patient for quick check-ins!`,
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                // Navigate to entry page
-                router.push(`/entry?visitId=${visitId}&mobileNumber=${encodeURIComponent(mobileNumber.trim())}&visitorName=${encodeURIComponent(user.displayName || 'Visitor')}&patientName=${encodeURIComponent(patientName.trim())}`);
-              }
-            }
-          ]
-        );
-      } else {
-        // Navigate to entry page
-        router.push(`/entry?visitId=${visitId}&mobileNumber=${encodeURIComponent(mobileNumber.trim())}&visitorName=${encodeURIComponent(user.displayName || 'Visitor')}&patientName=${encodeURIComponent(patientName.trim())}`);
-      }
+      Alert.alert(
+        "Success",
+        "Your enquiry has been submitted successfully!",
+        [
+          {
+            text: "OK",
+            onPress: () => router.back()
+          }
+        ]
+      );
     } catch (error) {
-      console.error("❌ Error adding patient:", error);
-      Alert.alert("Error", "Failed to add patient visit. Please try again.");
+      console.error("❌ Error adding enquiry:", error);
+      Alert.alert("Error", "Failed to submit enquiry. Please try again.");
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const updateDefaultPatient = async (userId: string, defaultPatientName: string) => {
-    try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (!user) return;
-
-      // Prepare complete profile data similar to welcome screen
-      const profileData = {
-        uid: user.uid,
-        visitorName: user.displayName || 'Visitor',
-        visitorEmail: user.email || '',
-        visitorMobile: mobileNumber.trim(),
-        defaultPatientName: defaultPatientName,
-        isProfileComplete: true,
-      };
-
-      if (Platform.OS === 'web') {
-        // Use Firestore REST API for web
-        const token = await user.getIdToken();
-        const now = new Date().toISOString();
-        
-        const fields: any = {
-          uid: { stringValue: user.uid },
-          visitorName: { stringValue: profileData.visitorName },
-          visitorEmail: { stringValue: profileData.visitorEmail },
-          visitorMobile: { stringValue: profileData.visitorMobile },
-          defaultPatientName: { stringValue: profileData.defaultPatientName },
-          isProfileComplete: { booleanValue: true },
-          createdAt: { timestampValue: now },
-          updatedAt: { timestampValue: now }
-        };
-
-        const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${userId}`;
-        const response = await fetch(url, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ fields })
-        });
-
-        if (!response.ok) {
-          const text = await response.text();
-          throw new Error(`Failed to update default patient: ${response.status} ${text}`);
-        }
-        
-        console.log("✅ Complete user profile updated via REST API:", profileData);
-      } else {
-        // Try native SDK first, with REST fallback
-        try {
-          if (firestore && typeof firestore === 'function') {
-            // Save complete profile to Firestore users collection using native SDK
-            await firestore()
-              .collection('users')
-              .doc(user.uid)
-              .set({
-                ...profileData,
-                createdAt: firestore.FieldValue.serverTimestamp(),
-                updatedAt: firestore.FieldValue.serverTimestamp()
-              }, { merge: true });
-              
-            console.log("✅ Complete user profile updated via native SDK:", profileData);
-          } else {
-            throw new Error('Native Firestore not available');
-          }
-        } catch (nativeError) {
-          console.warn('Native Firestore update failed, using REST fallback:', nativeError);
-          // Fallback to REST API if native SDK fails
-          const token = await user.getIdToken();
-          const now = new Date().toISOString();
-          
-          const fields: any = {
-            uid: { stringValue: user.uid },
-            visitorName: { stringValue: profileData.visitorName },
-            visitorEmail: { stringValue: profileData.visitorEmail },
-            visitorMobile: { stringValue: profileData.visitorMobile },
-            defaultPatientName: { stringValue: profileData.defaultPatientName },
-            isProfileComplete: { booleanValue: true },
-            createdAt: { timestampValue: now },
-            updatedAt: { timestampValue: now }
-          };
-
-          const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${userId}`;
-          const response = await fetch(url, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({ fields })
-          });
-
-          if (!response.ok) {
-            const text = await response.text();
-            throw new Error(`Failed to update default patient: ${response.status} ${text}`);
-          }
-          
-          console.log("✅ Complete user profile updated via REST fallback:", profileData);
-        }
-      }
-    } catch (error) {
-      console.error("❌ Error updating user profile with default patient:", error);
-      // Don't throw error here to avoid blocking the main flow
     }
   };
 
@@ -325,32 +206,32 @@ export default function AddPatient() {
         >
           {/* Top Section with Dark Teal Background */}
           <View style={styles.topSection}>
-            {/* Medical Icon */}
+            {/* Icon */}
             <View style={styles.iconContainer}>
-              <Ionicons name="medical" size={40} color="white" />
+              <Ionicons name="help-circle" size={40} color="white" />
             </View>
 
             {/* Title */}
-            <Text style={styles.title}>New Patient</Text>
+            <Text style={styles.title}>New Enquiry</Text>
             <Text style={styles.title}>Registration</Text>
 
             {/* Subtitle */}
             <Text style={styles.subtitle}>
-              Enter patient details to complete check-in
+              Enter your details to submit an enquiry
             </Text>
           </View>
 
           {/* White Form Container */}
           <View style={styles.formContainer}>
-            {/* Patient Name Input */}
+            {/* Enquirer Name Input */}
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Patient Name</Text>
+              <Text style={styles.inputLabel}>Your Name</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="Enter patient full name"
+                placeholder="Enter your full name"
                 placeholderTextColor="#A0A0A0"
-                value={patientName}
-                onChangeText={setPatientName}
+                value={enquirerName}
+                onChangeText={setEnquirerName}
                 autoCapitalize="words"
                 editable={!isSubmitting}
               />
@@ -381,32 +262,21 @@ export default function AddPatient() {
               </View>
             </View>
 
-            {/* Set as Default Patient Option */}
-            {patientName.trim() && (
-              <View style={styles.defaultPatientWrapper}>
-                <TouchableOpacity 
-                  style={styles.defaultPatientOption}
-                  onPress={() => setSetAsDefault(!setAsDefault)}
-                  disabled={isSubmitting}
-                >
-                  <View style={[styles.checkbox, setAsDefault && styles.checkboxSelected]}>
-                    {setAsDefault && (
-                      <Ionicons name="checkmark" size={16} color="white" />
-                    )}
-                  </View>
-                  <View style={styles.defaultPatientTextContainer}>
-                    <Text style={styles.defaultPatientText}>
-                      Set as my default patient
-                    </Text>
-                    <Text style={styles.defaultPatientSubtext}>
-                      Quick check-ins for "{patientName.trim()}" in the future
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            )}
+            {/* Patient Name Input */}
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Patient Name</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Enter patient name"
+                placeholderTextColor="#A0A0A0"
+                value={patientName}
+                onChangeText={setPatientName}
+                autoCapitalize="words"
+                editable={!isSubmitting}
+              />
+            </View>
 
-            {/* Check In Button */}
+            {/* Submit Button */}
             <TouchableOpacity 
               style={[styles.continueButton, isSubmitting && styles.buttonDisabled]} 
               onPress={handleContinue}
@@ -417,7 +287,7 @@ export default function AddPatient() {
               ) : (
                 <>
                   <Ionicons name="checkmark-circle" size={24} color="white" style={styles.buttonIcon} />
-                  <Text style={styles.buttonText}>Check In Patient</Text>
+                  <Text style={styles.buttonText}>Submit Enquiry</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -426,7 +296,7 @@ export default function AddPatient() {
             <View style={styles.infoBox}>
               <Ionicons name="information-circle-outline" size={20} color="#1C4B46" />
               <Text style={styles.infoText}>
-                Patient will be registered for today's visit
+                Your enquiry will be submitted to the reception staff
               </Text>
             </View>
           </View>
@@ -545,49 +415,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: "#333",
-  },
-  defaultPatientWrapper: {
-    marginTop: 8,
-    marginBottom: 8,
-    padding: 18,
-    backgroundColor: "#E8F5E9",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#C8E6C9",
-  },
-  defaultPatientOption: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "#81C784",
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-    marginTop: 2,
-  },
-  checkboxSelected: {
-    backgroundColor: "#1C4B46",
-    borderColor: "#1C4B46",
-  },
-  defaultPatientTextContainer: {
-    flex: 1,
-  },
-  defaultPatientText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#2C2C2E",
-    marginBottom: 4,
-  },
-  defaultPatientSubtext: {
-    fontSize: 13,
-    color: "#5D6D69",
-    lineHeight: 18,
   },
   continueButton: {
     width: "100%",

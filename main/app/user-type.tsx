@@ -89,7 +89,7 @@ export default function UserType() {
             onPress={handleVisitor}
             activeOpacity={0.8}
           >
-            <Ionicons name="people" size={50} color="#4CAF50" />
+            <Ionicons name="people" size={50} color="#1C4B46" />
             <Text style={styles.optionTitle}>Visitor</Text>
             <Text style={styles.optionDescription}>Check-in patients and manage visits</Text>
           </TouchableOpacity>
@@ -100,7 +100,7 @@ export default function UserType() {
             onPress={handleEnquiry}
             activeOpacity={0.8}
           >
-            <Ionicons name="help-circle" size={50} color="#2196F3" />
+            <Ionicons name="help-circle" size={50} color="#1C4B46" />
             <Text style={styles.optionTitle}>Enquiry</Text>
             <Text style={styles.optionDescription}>Submit and track enquiries</Text>
           </TouchableOpacity>
@@ -200,21 +200,21 @@ const styles = StyleSheet.create({
   },
   optionCard: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 28,
+    borderRadius: 20,
+    padding: 32,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-    borderWidth: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 2.5,
   },
   visitorCard: {
-    borderColor: "#4CAF50",
+    borderColor: "#1C4B46",
   },
   enquiryCard: {
-    borderColor: "#2196F3",
+    borderColor: "#1C4B46",
   },
   optionTitle: {
     fontSize: 24,

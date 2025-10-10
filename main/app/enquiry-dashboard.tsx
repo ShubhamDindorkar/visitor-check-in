@@ -136,15 +136,11 @@ export default function EnquiryDashboard() {
   };
 
   const handleNewEnquiry = () => {
-    Alert.alert("New Enquiry", "Enquiry form coming soon!");
-    // TODO: Navigate to enquiry form
-    // router.push("/new-enquiry");
+    router.push("/add-enquiry");
   };
 
-  const handleMyEnquiries = () => {
-    Alert.alert("My Enquiries", "Enquiries list coming soon!");
-    // TODO: Navigate to enquiries list
-    // router.push("/my-enquiries");
+  const handleScanQR = () => {
+    router.push("/scan-enquiry");
   };
 
   const handleSupport = () => {
@@ -169,8 +165,8 @@ export default function EnquiryDashboard() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return '#FF9800';
-      case 'in_progress': return '#2196F3';
-      case 'resolved': return '#4CAF50';
+      case 'in_progress': return '#1C4B46';
+      case 'resolved': return '#1C4B46';
       default: return '#999';
     }
   };
@@ -186,129 +182,68 @@ export default function EnquiryDashboard() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        
-        <Text style={styles.headerTitle}>Enquiry Dashboard</Text>
-        
-        <TouchableOpacity 
-          style={styles.profileButton}
-          onPress={() => setShowProfileMenu(!showProfileMenu)}
-        >
-          <Ionicons name="person-circle" size={32} color="#4CAF50" />
-        </TouchableOpacity>
-      </View>
+      {/* Back Button */}
+      <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+        <Ionicons name="arrow-back" size={24} color="#000" />
+      </TouchableOpacity>
+
+      {/* Profile Icon */}
+      <TouchableOpacity style={styles.profileButton} onPress={() => setShowProfileMenu(!showProfileMenu)}>
+        <Ionicons name="person-circle" size={40} color="#1C4B46" />
+      </TouchableOpacity>
 
       {/* Profile Menu Dropdown */}
       {showProfileMenu && (
-        <View style={styles.profileMenu}>
-          <View style={styles.profileMenuItem}>
-            <Ionicons name="person" size={20} color="#666" />
-            <Text style={styles.profileMenuText}>{userName}</Text>
-          </View>
+        <>
           <TouchableOpacity 
-            style={styles.profileMenuItem}
-            onPress={handleSignOut}
-          >
-            <Ionicons name="log-out" size={20} color="#f44336" />
-            <Text style={[styles.profileMenuText, { color: "#f44336" }]}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
+            style={styles.dropdownOverlay} 
+            onPress={() => setShowProfileMenu(false)}
+            activeOpacity={1}
+          />
+          <View style={styles.profileMenu}>
+            <View style={styles.profileMenuItem}>
+              <Ionicons name="person" size={20} color="#666" />
+              <Text style={styles.profileMenuText}>{userName}</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.profileMenuItem}
+              onPress={handleSignOut}
+            >
+              <Ionicons name="log-out" size={20} color="#f44336" />
+              <Text style={[styles.profileMenuText, { color: "#f44336" }]}>Sign Out</Text>
+            </TouchableOpacity>
+          </View>
+        </>
       )}
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Welcome Section */}
-        <View style={styles.welcomeCard}>
-          <View style={styles.welcomeIconContainer}>
-            <Ionicons name="help-circle" size={60} color="#FF9800" />
-          </View>
-          <Text style={styles.welcomeTitle}>Welcome to Enquiry Portal</Text>
-          <Text style={styles.welcomeSubtitle}>
-            Submit your questions and track their status
-          </Text>
-        </View>
-
-        {/* Quick Actions */}
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        
-        <View style={styles.actionsGrid}>
+      <View style={styles.content}>
+        {/* Main Action Buttons */}
+        <View style={styles.actionButtonsContainer}>
+          {/* Scan QR Button - Primary Action */}
           <TouchableOpacity 
-            style={[styles.actionCard, { backgroundColor: "#E3F2FD" }]}
+            style={styles.primaryActionButton} 
+            onPress={handleScanQR}
+          >
+            <View style={styles.buttonContentContainer}>
+              <Ionicons name="qr-code-outline" size={64} color="white" />
+              <Text style={styles.primaryButtonText}>Scan QR Code</Text>
+              <Text style={styles.buttonSubtext}>Scan reception QR for enquiry</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Add Enquiry Button */}
+          <TouchableOpacity 
+            style={styles.secondaryActionButton} 
             onPress={handleNewEnquiry}
           >
-            <View style={styles.actionIconContainer}>
-              <Ionicons name="create" size={36} color="#2196F3" />
+            <View style={styles.buttonContentContainer}>
+              <Ionicons name="create-outline" size={64} color="#1C4B46" />
+              <Text style={styles.secondaryButtonText}>New Enquiry</Text>
+              <Text style={styles.secondaryButtonSubtext}>Submit enquiry details</Text>
             </View>
-            <Text style={styles.actionTitle}>New Enquiry</Text>
-            <Text style={styles.actionSubtitle}>Submit a question</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.actionCard, { backgroundColor: "#FFF3E0" }]}
-            onPress={handleMyEnquiries}
-          >
-            <View style={styles.actionIconContainer}>
-              <Ionicons name="list" size={36} color="#FF9800" />
-            </View>
-            <Text style={styles.actionTitle}>My Enquiries</Text>
-            <Text style={styles.actionSubtitle}>View all enquiries</Text>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity 
-          style={[styles.actionCard, styles.fullWidthCard, { backgroundColor: "#F3E5F5" }]}
-          onPress={handleSupport}
-        >
-          <View style={styles.actionIconContainer}>
-            <Ionicons name="chatbubbles" size={36} color="#9C27B0" />
-          </View>
-          <Text style={styles.actionTitle}>Support</Text>
-          <Text style={styles.actionSubtitle}>Get help and support</Text>
-        </TouchableOpacity>
-
-        {/* Recent Enquiries */}
-        {recentEnquiries.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>Recent Enquiries</Text>
-            {recentEnquiries.map((enquiry) => (
-              <View key={enquiry.id} style={styles.enquiryCard}>
-                <View style={styles.enquiryHeader}>
-                  <Text style={styles.enquirySubject} numberOfLines={1}>
-                    {enquiry.subject}
-                  </Text>
-                  <View 
-                    style={[
-                      styles.statusBadge, 
-                      { backgroundColor: getStatusColor(enquiry.status) }
-                    ]}
-                  >
-                    <Text style={styles.statusText}>
-                      {getStatusLabel(enquiry.status)}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.enquiryFooter}>
-                  <Ionicons name="calendar-outline" size={14} color="#999" />
-                  <Text style={styles.enquiryDate}>
-                    {enquiry.createdAt.toLocaleDateString()}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </>
-        )}
-
-        {/* Info Section */}
-        <View style={styles.infoCard}>
-          <Ionicons name="information-circle" size={24} color="#2196F3" />
-          <Text style={styles.infoText}>
-            Submit enquiries and track their progress here. Our team will respond as soon as possible.
-          </Text>
-        </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -318,35 +253,51 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9fa",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#f5f5f5",
+    position: "absolute",
+    top: 60,
+    left: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#000",
+    zIndex: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   profileButton: {
-    padding: 4,
+    position: "absolute",
+    top: 60,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  dropdownOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 11,
   },
   profileMenu: {
     position: "absolute",
-    top: 70,
+    top: 120,
     right: 20,
     backgroundColor: "#fff",
     borderRadius: 12,
@@ -356,7 +307,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
-    zIndex: 1000,
+    zIndex: 12,
     minWidth: 200,
   },
   profileMenuItem: {
@@ -372,139 +323,73 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
-  },
-  welcomeCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: 20,
     alignItems: "center",
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  welcomeIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#FFF3E0",
+  actionButtonsContainer: {
+    width: "100%",
+    gap: 24,
+    flex: 1,
     justifyContent: "center",
+  },
+  primaryActionButton: {
+    backgroundColor: "#1C4B46",
+    borderRadius: 24,
+    padding: 36,
     alignItems: "center",
-    marginBottom: 16,
+    justifyContent: "center",
+    minHeight: 200,
+    shadowColor: "#1C4B46",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  welcomeTitle: {
+  secondaryActionButton: {
+    backgroundColor: "white",
+    borderRadius: 24,
+    padding: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 200,
+    borderWidth: 2.5,
+    borderColor: "#1C4B46",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  buttonContentContainer: {
+    alignItems: "center",
+    gap: 12,
+  },
+  primaryButtonText: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  welcomeSubtitle: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 16,
+    fontWeight: "700",
+    color: "white",
+    letterSpacing: 0.5,
     marginTop: 8,
   },
-  actionsGrid: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 12,
+  secondaryButtonText: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1C4B46",
+    letterSpacing: 0.5,
+    marginTop: 8,
   },
-  actionCard: {
-    flex: 1,
-    borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  fullWidthCard: {
-    width: "100%",
-    marginBottom: 24,
-  },
-  actionIconContainer: {
-    marginBottom: 12,
-  },
-  actionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 4,
+  buttonSubtext: {
+    fontSize: 15,
+    color: "rgba(255, 255, 255, 0.85)",
     textAlign: "center",
+    marginTop: 4,
   },
-  actionSubtitle: {
-    fontSize: 14,
-    color: "#666",
+  secondaryButtonSubtext: {
+    fontSize: 15,
+    color: "#5D6D69",
     textAlign: "center",
-  },
-  enquiryCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  enquiryHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  enquirySubject: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
-    marginRight: 8,
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#fff",
-  },
-  enquiryFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  enquiryDate: {
-    fontSize: 14,
-    color: "#999",
-  },
-  infoCard: {
-    flexDirection: "row",
-    backgroundColor: "#E3F2FD",
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-    marginBottom: 20,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: "#1976D2",
-    lineHeight: 20,
+    marginTop: 4,
   },
 });
 
