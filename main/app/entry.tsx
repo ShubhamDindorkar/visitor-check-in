@@ -38,7 +38,7 @@ export default function Entry() {
   }, []);
 
   const handleBackToDashboard = () => {
-    router.replace("/visitor-dashboard");
+    router.replace({ pathname: "/visitor-dashboard" } as any);
   };
 
   const handleCheckout = async () => {
@@ -49,7 +49,7 @@ export default function Entry() {
         [
           {
             text: "OK",
-            onPress: () => router.replace("/dashboard")
+            onPress: () => router.replace("/user-type")
           }
         ]
       );
@@ -101,11 +101,7 @@ export default function Entry() {
               {
                 text: "OK",
                 onPress: () => {
-                  if (mobileNumber) {
-                    router.replace(`/welcome?returnedMobileNumber=${encodeURIComponent(mobileNumber.toString())}`);
-                  } else {
-                    router.replace("/welcome");
-                  }
+                  router.replace("/user-type");
                 }
               }
             ]
@@ -139,7 +135,7 @@ export default function Entry() {
               [
                 {
                   text: "OK",
-                  onPress: () => router.replace("/dashboard")
+                  onPress: () => router.replace("/user-type")
                 }
               ]
             );
@@ -158,7 +154,7 @@ export default function Entry() {
         [
           {
             text: "OK",
-            onPress: () => router.replace("/dashboard")
+            onPress: () => router.replace("/user-type")
           }
         ]
       );

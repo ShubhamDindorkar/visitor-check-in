@@ -1,5 +1,6 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
+import { Platform } from 'react-native';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
@@ -30,21 +31,113 @@ export default function RootLayout() {
       if (user) {
         // Check if user has completed their profile
         setIsCheckingProfile(true);
+
         try {
-          const userDoc = await firestore()
-            .collection('users')
-            .doc(user.uid)
-            .get();
-          
-          const userData = userDoc.data();
-          const profileComplete = userData?.isProfileComplete === true;
-          setIsProfileComplete(profileComplete);
-          
-          console.log("Profile check:", { 
-            uid: user.uid, 
-            profileComplete,
-            hasDefaultPatient: !!userData?.defaultPatientName 
-          });
+          // Use platform-aware approach for checking profile
+          if (Platform.OS === 'web') {
+            // Use Firestore REST API for web
+            const token = await user.getIdToken();
+            const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
+            
+            const response = await fetch(url, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+            });
+
+            if (response.ok) {
+              const docData = await response.json();
+              const profileComplete = docData.fields?.isProfileComplete?.booleanValue === true;
+              setIsProfileComplete(profileComplete);
+              
+              console.log("Profile check (web):", { 
+                uid: user.uid, 
+                profileComplete,
+                hasDefaultPatient: !!docData.fields?.defaultPatientName?.stringValue 
+              });
+            } else {
+              console.warn('Profile document not found on web, assuming incomplete');
+              setIsProfileComplete(false);
+            }
+          } else {
+            // Use native SDK for mobile platforms with fallback
+            try {
+              // Check if firestore is properly initialized
+              if (firestore && typeof firestore === 'function') {
+                const userDoc = await firestore()
+                  .collection('users')
+                  .doc(user.uid)
+                  .get();
+                
+                const userData = userDoc.data();
+                const profileComplete = userData?.isProfileComplete === true;
+                setIsProfileComplete(profileComplete);
+                
+                console.log("Profile check (native):", { 
+                  uid: user.uid, 
+                  profileComplete,
+                  hasDefaultPatient: !!userData?.defaultPatientName 
+                });
+              } else {
+                console.warn('Native Firestore not available, falling back to REST API');
+                // Fallback to REST API if native SDK is not working
+                const token = await user.getIdToken();
+                const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
+                
+                const response = await fetch(url, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                  },
+                });
+
+                if (response.ok) {
+                  const docData = await response.json();
+                  const profileComplete = docData.fields?.isProfileComplete?.booleanValue === true;
+                  setIsProfileComplete(profileComplete);
+                  
+                  console.log("Profile check (fallback REST):", { 
+                    uid: user.uid, 
+                    profileComplete,
+                    hasDefaultPatient: !!docData.fields?.defaultPatientName?.stringValue 
+                  });
+                } else {
+                  console.warn('Profile document not found, assuming incomplete');
+                  setIsProfileComplete(false);
+                }
+              }
+            } catch (nativeError) {
+              console.warn('Native Firestore error, trying REST fallback:', nativeError);
+              // If native SDK fails, try REST API as fallback
+              try {
+                const token = await user.getIdToken();
+                const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
+                
+                const response = await fetch(url, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                  },
+                });
+
+                if (response.ok) {
+                  const docData = await response.json();
+                  const profileComplete = docData.fields?.isProfileComplete?.booleanValue === true;
+                  setIsProfileComplete(profileComplete);
+                  
+                  console.log("Profile check (native fallback to REST):", { 
+                    uid: user.uid, 
+                    profileComplete,
+                    hasDefaultPatient: !!docData.fields?.defaultPatientName?.stringValue 
+                  });
+                } else {
+                  console.warn('Profile document not found via REST fallback, assuming incomplete');
+                  setIsProfileComplete(false);
+                }
+              } catch (restError) {
+                console.error('Both native and REST Firestore failed:', restError);
+                setIsProfileComplete(false);
+              }
+            }
+          }
         } catch (error) {
           console.error("Error checking profile:", error);
           setIsProfileComplete(false);

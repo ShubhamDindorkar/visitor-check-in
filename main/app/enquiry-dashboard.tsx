@@ -1,4 +1,4 @@
-import { Text, View, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -30,22 +30,108 @@ export default function EnquiryDashboard() {
 
   const fetchRecentEnquiries = async (userId: string) => {
     try {
-      const snapshot = await firestore()
-        .collection('enquiries')
-        .where('createdBy', '==', userId)
-        .limit(3)
-        .get();
-      
-      const enquiries: Enquiry[] = snapshot.docs.map(doc => ({
-        id: doc.id,
-        subject: doc.data().subject || 'No subject',
-        status: doc.data().status || 'pending',
-        createdAt: doc.data().createdAt?.toDate?.() || new Date(),
-      }));
+      let enquiries: Enquiry[] = [];
+
+      // Use platform-aware approach for fetching enquiries
+      if (Platform.OS === 'web') {
+        // Use Firestore REST API for web
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const token = await user.getIdToken();
+        const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/enquiries`;
+        
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Filter and process enquiries for the user
+          const userEnquiries = (data.documents || [])
+            .filter((doc: any) => doc.fields?.createdBy?.stringValue === userId)
+            .slice(0, 3) // Limit to 3 recent enquiries
+            .map((doc: any) => ({
+              id: doc.name.split('/').pop(),
+              subject: doc.fields?.subject?.stringValue || 'No subject',
+              status: doc.fields?.status?.stringValue || 'pending',
+              createdAt: doc.fields?.createdAt?.timestampValue 
+                ? new Date(doc.fields.createdAt.timestampValue) 
+                : new Date(),
+            }));
+          
+          enquiries = userEnquiries;
+          console.log("Enquiries fetched via REST API:", enquiries.length);
+        } else {
+          console.warn('No enquiries found via REST API');
+        }
+      } else {
+        // Try native SDK first, with REST fallback
+        try {
+          if (firestore && typeof firestore === 'function') {
+            const snapshot = await firestore()
+              .collection('enquiries')
+              .where('createdBy', '==', userId)
+              .limit(3)
+              .get();
+            
+            enquiries = snapshot.docs.map(doc => ({
+              id: doc.id,
+              subject: doc.data().subject || 'No subject',
+              status: doc.data().status || 'pending',
+              createdAt: doc.data().createdAt?.toDate?.() || new Date(),
+            }));
+            
+            console.log("Enquiries fetched via native SDK:", enquiries.length);
+          } else {
+            throw new Error('Native Firestore not available');
+          }
+        } catch (nativeError) {
+          console.warn('Native Firestore fetch failed, using REST fallback:', nativeError);
+          // Fallback to REST API if native SDK fails
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (!user) return;
+
+          const token = await user.getIdToken();
+          const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/enquiries`;
+          
+          const response = await fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            // Filter and process enquiries for the user
+            const userEnquiries = (data.documents || [])
+              .filter((doc: any) => doc.fields?.createdBy?.stringValue === userId)
+              .slice(0, 3) // Limit to 3 recent enquiries
+              .map((doc: any) => ({
+                id: doc.name.split('/').pop(),
+                subject: doc.fields?.subject?.stringValue || 'No subject',
+                status: doc.fields?.status?.stringValue || 'pending',
+                createdAt: doc.fields?.createdAt?.timestampValue 
+                  ? new Date(doc.fields.createdAt.timestampValue) 
+                  : new Date(),
+              }));
+            
+            enquiries = userEnquiries;
+            console.log("Enquiries fetched via REST fallback:", enquiries.length);
+          } else {
+            console.warn('No enquiries found via REST fallback');
+          }
+        }
+      }
       
       setRecentEnquiries(enquiries);
     } catch (error) {
       console.error("Error fetching enquiries:", error);
+      setRecentEnquiries([]);
     }
   };
 
