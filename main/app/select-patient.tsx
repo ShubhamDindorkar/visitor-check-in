@@ -1,4 +1,4 @@
-import { Text, View, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert } from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +15,8 @@ interface Patient {
 export default function SelectPatient() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedPatients, setSelectedPatients] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchPatients();
@@ -32,20 +34,111 @@ export default function SelectPatient() {
 
       console.log("🔍 Fetching patients for user:", user.uid);
 
-      // First, try to get the default patient from user profile
-      const userDoc = await firestore().collection('users').doc(user.uid).get();
-      const userData = userDoc.data();
-      const defaultPatientName = userData?.defaultPatientName;
+      let defaultPatientName: string | undefined;
+      let visitsData: any[] = [];
 
-      console.log("👤 Default patient from profile:", defaultPatientName);
+      // Use platform-aware approach for fetching patient data
+      if (Platform.OS === 'web') {
+        // Use Firestore REST API for web
+        const token = await user.getIdToken();
+        
+        // Fetch user profile for default patient
+        const userUrl = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
+        const userResponse = await fetch(userUrl, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
 
-      // Fetch all visits for this user (NO orderBy to avoid index requirement)
-      const visitsRef = firestore().collection('visits');
-      const visitsSnapshot = await visitsRef
-        .where('createdBy', '==', user.uid)
-        .get();
+        if (userResponse.ok) {
+          const userDoc = await userResponse.json();
+          defaultPatientName = userDoc.fields?.defaultPatientName?.stringValue;
+        }
 
-      console.log("📊 Found", visitsSnapshot.size, "visits");
+        // Fetch visits
+        const visitsUrl = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/visits`;
+        const visitsResponse = await fetch(visitsUrl, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (visitsResponse.ok) {
+          const visitsDoc = await visitsResponse.json();
+          visitsData = (visitsDoc.documents || [])
+            .filter((doc: any) => doc.fields?.createdBy?.stringValue === user.uid)
+            .map((doc: any) => ({
+              patientName: doc.fields?.patientName?.stringValue,
+              createdAt: doc.fields?.createdAt?.timestampValue 
+                ? new Date(doc.fields.createdAt.timestampValue)
+                : new Date(),
+            }));
+        }
+
+        console.log("👤 Default patient from profile (web):", defaultPatientName);
+        console.log("📊 Found", visitsData.length, "visits (web)");
+      } else {
+        // Try native SDK first, with REST fallback
+        try {
+          if (firestore && typeof firestore === 'function') {
+            // Fetch user profile for default patient
+            const userDoc = await firestore().collection('users').doc(user.uid).get();
+            const userData = userDoc.data();
+            defaultPatientName = userData?.defaultPatientName;
+
+            // Fetch visits
+            const visitsSnapshot = await firestore()
+              .collection('visits')
+              .where('createdBy', '==', user.uid)
+              .get();
+
+            visitsData = visitsSnapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                patientName: data.patientName,
+                createdAt: data.createdAt?.toDate?.() || new Date(),
+              };
+            });
+
+            console.log("👤 Default patient from profile (native):", defaultPatientName);
+            console.log("📊 Found", visitsData.length, "visits (native)");
+          } else {
+            throw new Error('Native Firestore not available');
+          }
+        } catch (nativeError) {
+          console.warn('Native Firestore fetch failed, using REST fallback:', nativeError);
+          // Fallback to REST API if native SDK fails
+          const token = await user.getIdToken();
+          
+          // Fetch user profile for default patient
+          const userUrl = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
+          const userResponse = await fetch(userUrl, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+
+          if (userResponse.ok) {
+            const userDoc = await userResponse.json();
+            defaultPatientName = userDoc.fields?.defaultPatientName?.stringValue;
+          }
+
+          // Fetch visits
+          const visitsUrl = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/visits`;
+          const visitsResponse = await fetch(visitsUrl, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+
+          if (visitsResponse.ok) {
+            const visitsDoc = await visitsResponse.json();
+            visitsData = (visitsDoc.documents || [])
+              .filter((doc: any) => doc.fields?.createdBy?.stringValue === user.uid)
+              .map((doc: any) => ({
+                patientName: doc.fields?.patientName?.stringValue,
+                createdAt: doc.fields?.createdAt?.timestampValue 
+                  ? new Date(doc.fields.createdAt.timestampValue)
+                  : new Date(),
+              }));
+          }
+
+          console.log("👤 Default patient from profile (REST fallback):", defaultPatientName);
+          console.log("📊 Found", visitsData.length, "visits (REST fallback)");
+        }
+      }
 
       // Extract unique patients with their most recent visit
       const patientMap = new Map<string, { patient: Patient; timestamp: number }>();
@@ -62,12 +155,11 @@ export default function SelectPatient() {
         });
       }
       
-      visitsSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const patientName = data.patientName;
+      visitsData.forEach(visit => {
+        const patientName = visit.patientName;
         
         if (patientName) {
-          const timestamp = data.createdAt?.toMillis?.() || Date.now();
+          const timestamp = visit.createdAt.getTime();
           
           // Keep the most recent visit for each patient
           if (!patientMap.has(patientName) || timestamp > patientMap.get(patientName)!.timestamp) {
@@ -75,7 +167,7 @@ export default function SelectPatient() {
               patient: {
                 id: patientName,
                 name: patientName,
-                lastVisit: data.createdAt?.toDate?.()?.toLocaleDateString() || 'Recently'
+                lastVisit: visit.createdAt.toLocaleDateString() || 'Recently'
               },
               timestamp
             });
@@ -115,11 +207,274 @@ export default function SelectPatient() {
     router.push("/add-patient");
   };
 
+  const handleEditMode = () => {
+    setIsEditMode(!isEditMode);
+    setSelectedPatients(new Set()); // Clear selections when toggling edit mode
+  };
+
+  const handlePatientSelection = (patientId: string) => {
+    const newSelected = new Set(selectedPatients);
+    if (newSelected.has(patientId)) {
+      newSelected.delete(patientId);
+    } else {
+      newSelected.add(patientId);
+    }
+    setSelectedPatients(newSelected);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedPatients.size === 0) return;
+
+    const patientsToDelete = patients.filter(p => selectedPatients.has(p.id));
+    const patientNames = patientsToDelete.map(p => p.name).join(', ');
+    const hasDefaultPatient = patientsToDelete.some(p => p.lastVisit === 'Default Patient');
+
+    let message = `Are you sure you want to delete ${selectedPatients.size} patient(s): ${patientNames}?`;
+    
+    if (hasDefaultPatient) {
+      message += '\n\n⚠️ This includes your default patient. You will need to set up a new default patient when creating your profile again.';
+    }
+
+    Alert.alert(
+      "Delete Patients",
+      message,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const auth = getAuth();
+              const user = auth.currentUser;
+              
+              if (!user) return;
+
+              // Delete patients by removing visits and updating user profile if needed
+              await deletePatientData(user.uid, Array.from(selectedPatients));
+              
+              // Refresh the patient list
+              await fetchPatients();
+              
+              // Exit edit mode and clear selections
+              setIsEditMode(false);
+              setSelectedPatients(new Set());
+              
+              Alert.alert("Success", "Selected patients have been deleted.");
+            } catch (error) {
+              console.error("Error deleting patients:", error);
+              Alert.alert("Error", "Failed to delete patients. Please try again.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const deletePatientData = async (userId: string, patientIds: string[]) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // Check if we're deleting the default patient and get current default patient name
+    let defaultPatientName: string | undefined;
+    let shouldUpdateDefaultPatient = false;
+
+    // Use platform-aware approach for deleting patient data
+    if (Platform.OS === 'web') {
+      // Use Firestore REST API for web
+      const token = await user.getIdToken();
+      
+      // First, get the current default patient name
+      const userUrl = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
+      const userResponse = await fetch(userUrl, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (userResponse.ok) {
+        const userDoc = await userResponse.json();
+        defaultPatientName = userDoc.fields?.defaultPatientName?.stringValue;
+        shouldUpdateDefaultPatient = !!(defaultPatientName && patientIds.includes(defaultPatientName));
+      }
+      
+      // Get all visits to find which ones to delete
+      const visitsUrl = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/visits`;
+      const visitsResponse = await fetch(visitsUrl, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (visitsResponse.ok) {
+        const visitsDoc = await visitsResponse.json();
+        const visitsToDelete = (visitsDoc.documents || [])
+          .filter((doc: any) => 
+            doc.fields?.createdBy?.stringValue === userId &&
+            patientIds.includes(doc.fields?.patientName?.stringValue)
+          );
+
+        // Delete each visit document
+        for (const visit of visitsToDelete) {
+          const visitId = visit.name.split('/').pop();
+          const deleteUrl = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/visits/${visitId}`;
+          await fetch(deleteUrl, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+        }
+      }
+
+      // If we're deleting the default patient, update the user profile
+      if (shouldUpdateDefaultPatient) {
+        const updateUrl = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
+        await fetch(updateUrl, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            fields: {
+              defaultPatientName: { stringValue: '' }, // Clear the default patient
+              updatedAt: { timestampValue: new Date().toISOString() }
+            }
+          })
+        });
+      }
+    } else {
+      // Try native SDK first, with REST fallback
+      try {
+        if (firestore && typeof firestore === 'function') {
+          // First, get the current default patient name
+          const userDoc = await firestore().collection('users').doc(user.uid).get();
+          const userData = userDoc.data();
+          defaultPatientName = userData?.defaultPatientName;
+          shouldUpdateDefaultPatient = !!(defaultPatientName && patientIds.includes(defaultPatientName));
+
+          // Delete all visits for the selected patients
+          const visitsSnapshot = await firestore()
+            .collection('visits')
+            .where('createdBy', '==', userId)
+            .get();
+
+          const batch = firestore().batch();
+          let hasDeletes = false;
+
+          visitsSnapshot.docs.forEach(doc => {
+            const data = doc.data();
+            if (patientIds.includes(data.patientName)) {
+              batch.delete(doc.ref);
+              hasDeletes = true;
+            }
+          });
+
+          // If we're deleting the default patient, update the user profile
+          if (shouldUpdateDefaultPatient) {
+            const userRef = firestore().collection('users').doc(user.uid);
+            batch.update(userRef, {
+              defaultPatientName: '', // Clear the default patient
+              updatedAt: firestore.FieldValue.serverTimestamp()
+            });
+            hasDeletes = true;
+          }
+
+          if (hasDeletes) {
+            await batch.commit();
+          }
+        } else {
+          throw new Error('Native Firestore not available');
+        }
+      } catch (nativeError) {
+        console.warn('Native Firestore delete failed, using REST fallback:', nativeError);
+        // Fallback to REST API if native SDK fails
+        const token = await user.getIdToken();
+        
+        // First, get the current default patient name
+        const userUrl = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
+        const userResponse = await fetch(userUrl, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (userResponse.ok) {
+          const userDoc = await userResponse.json();
+          defaultPatientName = userDoc.fields?.defaultPatientName?.stringValue;
+          shouldUpdateDefaultPatient = !!(defaultPatientName && patientIds.includes(defaultPatientName));
+        }
+        
+        // Get all visits to find which ones to delete
+        const visitsUrl = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/visits`;
+        const visitsResponse = await fetch(visitsUrl, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (visitsResponse.ok) {
+          const visitsDoc = await visitsResponse.json();
+          const visitsToDelete = (visitsDoc.documents || [])
+            .filter((doc: any) => 
+              doc.fields?.createdBy?.stringValue === userId &&
+              patientIds.includes(doc.fields?.patientName?.stringValue)
+            );
+
+          // Delete each visit document
+          for (const visit of visitsToDelete) {
+            const visitId = visit.name.split('/').pop();
+            const deleteUrl = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/visits/${visitId}`;
+            await fetch(deleteUrl, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${token}` },
+            });
+          }
+        }
+
+        // If we're deleting the default patient, update the user profile
+        if (shouldUpdateDefaultPatient) {
+          const updateUrl = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
+          await fetch(updateUrl, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              fields: {
+                defaultPatientName: { stringValue: '' }, // Clear the default patient
+                updatedAt: { timestampValue: new Date().toISOString() }
+              }
+            })
+          });
+        }
+      }
+    }
+  };
+
   const renderPatientItem = ({ item }: { item: Patient }) => (
     <TouchableOpacity 
-      style={styles.patientCard}
-      onPress={() => handleSelectPatient(item)}
+      style={[
+        styles.patientCard,
+        isEditMode && selectedPatients.has(item.id) && styles.selectedPatientCard
+      ]}
+      onPress={() => {
+        if (isEditMode) {
+          handlePatientSelection(item.id);
+        } else {
+          handleSelectPatient(item);
+        }
+      }}
     >
+      {isEditMode && (
+        <TouchableOpacity 
+          style={styles.radioContainer}
+          onPress={() => handlePatientSelection(item.id)}
+        >
+          <View style={[
+            styles.radioButton,
+            selectedPatients.has(item.id) && styles.radioButtonSelected
+          ]}>
+            {selectedPatients.has(item.id) && (
+              <Ionicons name="checkmark" size={16} color="#fff" />
+            )}
+          </View>
+        </TouchableOpacity>
+      )}
+      
       <View style={styles.patientIconContainer}>
         <Ionicons name="person" size={32} color="#2196F3" />
       </View>
@@ -127,7 +482,9 @@ export default function SelectPatient() {
         <Text style={styles.patientName}>{item.name}</Text>
         <Text style={styles.patientLastVisit}>Last visit: {item.lastVisit}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={24} color="#ccc" />
+      {!isEditMode && (
+        <Ionicons name="chevron-forward" size={24} color="#ccc" />
+      )}
     </TouchableOpacity>
   );
 
@@ -139,8 +496,30 @@ export default function SelectPatient() {
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Select Patient</Text>
-        <View style={styles.placeholder} />
+        <TouchableOpacity 
+          style={styles.editButton} 
+          onPress={handleEditMode}
+        >
+          <Text style={styles.editButtonText}>
+            {isEditMode ? "Done" : "Edit"}
+          </Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Delete Button - Show when in edit mode and patients are selected */}
+      {isEditMode && selectedPatients.size > 0 && (
+        <View style={styles.deleteHeader}>
+          <TouchableOpacity 
+            style={styles.deleteButton}
+            onPress={handleDeleteSelected}
+          >
+            <Ionicons name="trash" size={20} color="#fff" />
+            <Text style={styles.deleteButtonText}>
+              Delete ({selectedPatients.size})
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Content */}
       <View style={styles.content}>
@@ -210,6 +589,35 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#000",
   },
+  editButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: "#2196F3",
+  },
+  editButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  deleteHeader: {
+    backgroundColor: "#f44336",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#d32f2f",
+  },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
+  },
   placeholder: {
     width: 40,
   },
@@ -268,6 +676,28 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  selectedPatientCard: {
+    backgroundColor: "#E3F2FD",
+    borderWidth: 2,
+    borderColor: "#2196F3",
+  },
+  radioContainer: {
+    marginRight: 12,
+  },
+  radioButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#ccc",
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  radioButtonSelected: {
+    backgroundColor: "#2196F3",
+    borderColor: "#2196F3",
   },
   patientIconContainer: {
     width: 56,

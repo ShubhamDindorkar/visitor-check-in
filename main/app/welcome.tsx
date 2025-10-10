@@ -1,4 +1,4 @@
-import { Text, View, StyleSheet, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator } from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -141,20 +141,96 @@ export default function Welcome() {
         visitorMobile: mobileNumber.trim(),
         defaultPatientName: patientName.trim(),
         isProfileComplete: true,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-        updatedAt: firestore.FieldValue.serverTimestamp()
       };
 
-      // Save to Firestore users collection
-      await firestore()
-        .collection('users')
-        .doc(user.uid)
-        .set(profileData, { merge: true });
-      
+      // If running on web, react-native-firebase native methods are not available.
+      // Use Firestore REST API as a web-safe fallback.
+      if (Platform.OS === 'web') {
+        const token = await user.getIdToken();
+        const now = new Date().toISOString();
+        const fields: any = {
+          uid: { stringValue: user.uid },
+          visitorName: { stringValue: profileData.visitorName },
+          visitorEmail: { stringValue: profileData.visitorEmail || '' },
+          visitorMobile: { stringValue: profileData.visitorMobile },
+          defaultPatientName: { stringValue: profileData.defaultPatientName },
+          isProfileComplete: { booleanValue: true },
+          createdAt: { timestampValue: now },
+          updatedAt: { timestampValue: now }
+        };
+
+        const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
+        const resp = await fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ fields })
+        });
+
+        if (!resp.ok) {
+          const text = await resp.text();
+          throw new Error(`Firestore REST save failed: ${resp.status} ${text}`);
+        }
+      } else {
+        // Try native SDK first, with REST fallback
+        try {
+          // Check if firestore is properly initialized
+          if (firestore && typeof firestore === 'function') {
+            // Save to Firestore users collection using native SDK
+            await firestore()
+              .collection('users')
+              .doc(user.uid)
+              .set({
+                ...profileData,
+                createdAt: firestore.FieldValue.serverTimestamp(),
+                updatedAt: firestore.FieldValue.serverTimestamp()
+              }, { merge: true });
+              
+            console.log("✅ Profile saved using native SDK");
+          } else {
+            throw new Error('Native Firestore not available');
+          }
+        } catch (nativeError) {
+          console.warn('Native Firestore save failed, using REST fallback:', nativeError);
+          // Fallback to REST API if native SDK fails
+          const token = await user.getIdToken();
+          const now = new Date().toISOString();
+          const fields: any = {
+            uid: { stringValue: user.uid },
+            visitorName: { stringValue: profileData.visitorName },
+            visitorEmail: { stringValue: profileData.visitorEmail || '' },
+            visitorMobile: { stringValue: profileData.visitorMobile },
+            defaultPatientName: { stringValue: profileData.defaultPatientName },
+            isProfileComplete: { booleanValue: true },
+            createdAt: { timestampValue: now },
+            updatedAt: { timestampValue: now }
+          };
+
+          const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
+          const resp = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ fields })
+          });
+
+          if (!resp.ok) {
+            const text = await resp.text();
+            throw new Error(`Firestore REST fallback save failed: ${resp.status} ${text}`);
+          }
+          
+          console.log("✅ Profile saved using REST fallback");
+        }
+      }
+
       console.log("✅ User profile saved to Firestore:", profileData);
-      
+
       // Navigate to dashboard
-        router.replace('/user-type');
+      router.replace({ pathname: '/user-type' } as any);
       
     } catch (error) {
       console.error("❌ Error saving profile:", error);
@@ -482,7 +558,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: "#8E8E93",
+    color: "#000",
     marginBottom: 20,
     textAlign: "center",
     fontWeight: "400",

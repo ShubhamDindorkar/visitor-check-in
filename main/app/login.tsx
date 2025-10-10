@@ -81,10 +81,6 @@ export default function Login() {
     router.push("/manual-signin");
   };
 
-  const handleQRScan = () => {
-    router.push("/scan");
-  };
-
   const handleNext = () => {
     router.push("/welcome");
   };
@@ -129,24 +125,6 @@ export default function Login() {
             <View style={styles.optionText}>
               <Text style={styles.optionTitle}>Create account Manually</Text>
               <Text style={styles.optionSubtitle}>Enter your Details to continue</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-        </TouchableOpacity>
-
-        {/* QR Code Scan Option */}
-        <TouchableOpacity style={styles.authOption} onPress={handleQRScan}>
-          <View style={styles.optionLeft}>
-            <View style={styles.qrIcon}>
-              <Image 
-                source={require("../assets/images/qr-code.png")} 
-                style={styles.qrImage}
-                resizeMode="contain"
-              />
-            </View>
-            <View style={styles.optionText}>
-              <Text style={styles.optionTitle}>Scan QR Code</Text>
-              <Text style={styles.optionSubtitle}>Quick access with QR code scanning</Text>
             </View>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
@@ -259,13 +237,6 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   phoneImage: {
-    width: 40,
-    height: 40,
-  },
-  qrIcon: {
-    marginRight: 16,
-  },
-  qrImage: {
     width: 40,
     height: 40,
   },

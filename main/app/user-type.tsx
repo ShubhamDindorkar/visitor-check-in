@@ -1,4 +1,4 @@
-import { Text, View, StyleSheet, TouchableOpacity, Animated } from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity, Animated, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -44,79 +44,85 @@ export default function UserType() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Animated.View style={[styles.content, { opacity: opacityAnim }]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Ionicons name="person-circle-outline" size={80} color="#4CAF50" />
-          <Text style={styles.title}>Welcome!</Text>
-          <Text style={styles.subtitle}>How would you like to proceed?</Text>
-        </View>
+      <ScrollView 
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View style={[styles.content, { opacity: opacityAnim }]}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Ionicons name="person-circle-outline" size={80} color="#4CAF50" />
+            <Text style={styles.title}>Welcome!</Text>
+            <Text style={styles.subtitle}>How would you like to proceed?</Text>
+          </View>
 
-        {/* Options */}
-        <View style={styles.optionsContainer}>
-          {/* Visitor Option */}
-          <Animated.View style={{ transform: [{ scale: scaleAnimVisitor }] }}>
-            <TouchableOpacity
-              style={[styles.optionCard, styles.visitorCard]}
-              onPress={handleVisitor}
-              activeOpacity={0.8}
-            >
-              <View style={styles.iconContainer}>
-                <Ionicons name="people" size={60} color="#2196F3" />
-              </View>
-              <Text style={styles.optionTitle}>Visitor</Text>
-              <Text style={styles.optionDescription}>
-                Check in patients, scan QR codes, and manage visits
-              </Text>
-              <View style={styles.featuresContainer}>
-                <View style={styles.featureRow}>
-                  <Ionicons name="qr-code-outline" size={20} color="#2196F3" />
-                  <Text style={styles.featureText}>Scan QR</Text>
+          {/* Options */}
+          <View style={styles.optionsContainer}>
+            {/* Visitor Option */}
+            <Animated.View style={{ transform: [{ scale: scaleAnimVisitor }] }}>
+              <TouchableOpacity
+                style={[styles.optionCard, styles.visitorCard]}
+                onPress={handleVisitor}
+                activeOpacity={0.8}
+              >
+                <View style={styles.iconContainer}>
+                  <Ionicons name="people" size={60} color="#2196F3" />
                 </View>
-                <View style={styles.featureRow}>
-                  <Ionicons name="person-add-outline" size={20} color="#2196F3" />
-                  <Text style={styles.featureText}>Add Patient</Text>
+                <Text style={styles.optionTitle}>Visitor</Text>
+                <Text style={styles.optionDescription}>
+                  Check in patients, scan QR codes, and manage visits
+                </Text>
+                <View style={styles.featuresContainer}>
+                  <View style={styles.featureRow}>
+                    <Ionicons name="qr-code-outline" size={20} color="#2196F3" />
+                    <Text style={styles.featureText}>Scan QR</Text>
+                  </View>
+                  <View style={styles.featureRow}>
+                    <Ionicons name="person-add-outline" size={20} color="#2196F3" />
+                    <Text style={styles.featureText}>Add Patient</Text>
+                  </View>
+                  <View style={styles.featureRow}>
+                    <Ionicons name="clipboard-outline" size={20} color="#2196F3" />
+                    <Text style={styles.featureText}>View Dashboard</Text>
+                  </View>
                 </View>
-                <View style={styles.featureRow}>
-                  <Ionicons name="clipboard-outline" size={20} color="#2196F3" />
-                  <Text style={styles.featureText}>View Dashboard</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
+              </TouchableOpacity>
+            </Animated.View>
 
-          {/* Enquiry Option */}
-          <Animated.View style={{ transform: [{ scale: scaleAnimEnquiry }] }}>
-            <TouchableOpacity
-              style={[styles.optionCard, styles.enquiryCard]}
-              onPress={handleEnquiry}
-              activeOpacity={0.8}
-            >
-              <View style={styles.iconContainer}>
-                <Ionicons name="help-circle" size={60} color="#FF9800" />
-              </View>
-              <Text style={styles.optionTitle}>Enquiry</Text>
-              <Text style={styles.optionDescription}>
-                Submit enquiries, track status, and get information
-              </Text>
-              <View style={styles.featuresContainer}>
-                <View style={styles.featureRow}>
-                  <Ionicons name="create-outline" size={20} color="#FF9800" />
-                  <Text style={styles.featureText}>New Enquiry</Text>
+            {/* Enquiry Option */}
+            <Animated.View style={{ transform: [{ scale: scaleAnimEnquiry }] }}>
+              <TouchableOpacity
+                style={[styles.optionCard, styles.enquiryCard]}
+                onPress={handleEnquiry}
+                activeOpacity={0.8}
+              >
+                <View style={styles.iconContainer}>
+                  <Ionicons name="help-circle" size={60} color="#FF9800" />
                 </View>
-                <View style={styles.featureRow}>
-                  <Ionicons name="list-outline" size={20} color="#FF9800" />
-                  <Text style={styles.featureText}>My Enquiries</Text>
+                <Text style={styles.optionTitle}>Enquiry</Text>
+                <Text style={styles.optionDescription}>
+                  Submit enquiries, track status, and get information
+                </Text>
+                <View style={styles.featuresContainer}>
+                  <View style={styles.featureRow}>
+                    <Ionicons name="create-outline" size={20} color="#FF9800" />
+                    <Text style={styles.featureText}>New Enquiry</Text>
+                  </View>
+                  <View style={styles.featureRow}>
+                    <Ionicons name="list-outline" size={20} color="#FF9800" />
+                    <Text style={styles.featureText}>My Enquiries</Text>
+                  </View>
+                  <View style={styles.featureRow}>
+                    <Ionicons name="chatbubbles-outline" size={20} color="#FF9800" />
+                    <Text style={styles.featureText}>Support</Text>
+                  </View>
                 </View>
-                <View style={styles.featureRow}>
-                  <Ionicons name="chatbubbles-outline" size={20} color="#FF9800" />
-                  <Text style={styles.featureText}>Support</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-      </Animated.View>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        </Animated.View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -126,9 +132,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9fa",
   },
-  content: {
+  scrollContainer: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+  content: {
     padding: 20,
+    minHeight: '100%',
   },
   header: {
     alignItems: "center",
@@ -148,7 +161,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   optionsContainer: {
-    flex: 1,
     gap: 20,
   },
   optionCard: {

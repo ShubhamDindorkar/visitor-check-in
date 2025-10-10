@@ -10,12 +10,20 @@ let useCameraPermissions: any = null;
 let BarcodeScanningResult: any = null;
 
 try {
-  const cameraModule = require("expo-camera");
-  CameraView = cameraModule.CameraView;
-  useCameraPermissions = cameraModule.useCameraPermissions;
-  BarcodeScanningResult = cameraModule.BarcodeScanningResult;
+  const { CameraView: CV, useCameraPermissions: UCP } = require("expo-camera");
+  CameraView = CV;
+  useCameraPermissions = UCP;
 } catch (error) {
   console.warn("Camera module not available:", error);
+  try {
+    // Fallback: try importing directly
+    const cameraModule = require("expo-camera");
+    CameraView = cameraModule.CameraView || cameraModule.Camera;
+    useCameraPermissions = cameraModule.useCameraPermissions;
+    BarcodeScanningResult = cameraModule.BarcodeScanningResult;
+  } catch (fallbackError) {
+    console.warn("Camera fallback import also failed:", fallbackError);
+  }
 }
 
 export default function ScanScreen() {
@@ -25,7 +33,14 @@ export default function ScanScreen() {
   const [torchEnabled, setTorchEnabled] = useState<boolean>(false);
 
   useEffect(() => {
+    console.log("Camera availability check:", {
+      CameraView: !!CameraView,
+      useCameraPermissions: !!useCameraPermissions,
+      platform: Platform.OS
+    });
+    
     setCameraAvailable(!!CameraView && !!useCameraPermissions);
+    
     if (permission && !permission.granted && permission.canAskAgain) {
       requestPermission();
     }
@@ -83,7 +98,12 @@ export default function ScanScreen() {
       <SafeAreaView style={styles.center}>
         <Text style={styles.title}>Camera access is required to scan QR codes.</Text>
         <Text style={styles.muted}>Enable camera permission in Settings and try again.</Text>
-        <Button title="Grant Permission" onPress={requestPermission} />
+        <TouchableOpacity 
+          style={styles.permissionButton} 
+          onPress={requestPermission}
+        >
+          <Text style={styles.permissionButtonText}>Grant Permission</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -281,5 +301,18 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  permissionButton: {
+    backgroundColor: "#4CAF50",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  permissionButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
   },
 });
