@@ -1,38 +1,14 @@
-import { Text, View, StyleSheet, TouchableOpacity, Animated, ScrollView } from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef } from "react";
+import { useState } from "react";
+import { getAuth, signOut as firebaseSignOut } from '@react-native-firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export default function UserType() {
-  const scaleAnimVisitor = useRef(new Animated.Value(0.8)).current;
-  const scaleAnimEnquiry = useRef(new Animated.Value(0.8)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    // Entrance animations
-    Animated.parallel([
-      Animated.spring(scaleAnimVisitor, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-        delay: 100,
-      }),
-      Animated.spring(scaleAnimEnquiry, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-        delay: 200,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleVisitor = () => {
     router.push("/visitor-dashboard");
@@ -42,87 +18,94 @@ export default function UserType() {
     router.push("/enquiry-dashboard");
   };
 
+  const handleSignOut = async () => {
+    try {
+      setIsSigningOut(true);
+      
+      await Promise.all([
+        GoogleSignin.signOut(),
+        firebaseSignOut(getAuth())
+      ]);
+      
+      router.replace('/');
+    } catch (error) {
+      console.log('Sign out error:', error);
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
+  const toggleProfileDropdown = () => {
+    setShowProfileDropdown(!showProfileDropdown);
+  };
+
+  const closeProfileDropdown = () => {
+    setShowProfileDropdown(false);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View style={[styles.content, { opacity: opacityAnim }]}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Ionicons name="person-circle-outline" size={80} color="#4CAF50" />
-            <Text style={styles.title}>Welcome!</Text>
-            <Text style={styles.subtitle}>How would you like to proceed?</Text>
-          </View>
+      {/* Profile Icon */}
+      <TouchableOpacity style={styles.profileButton} onPress={toggleProfileDropdown}>
+        <Ionicons name="person-circle" size={40} color="#000" />
+      </TouchableOpacity>
 
-          {/* Options */}
-          <View style={styles.optionsContainer}>
-            {/* Visitor Option */}
-            <Animated.View style={{ transform: [{ scale: scaleAnimVisitor }] }}>
-              <TouchableOpacity
-                style={[styles.optionCard, styles.visitorCard]}
-                onPress={handleVisitor}
-                activeOpacity={0.8}
-              >
-                <View style={styles.iconContainer}>
-                  <Ionicons name="people" size={60} color="#2196F3" />
-                </View>
-                <Text style={styles.optionTitle}>Visitor</Text>
-                <Text style={styles.optionDescription}>
-                  Check in patients, scan QR codes, and manage visits
-                </Text>
-                <View style={styles.featuresContainer}>
-                  <View style={styles.featureRow}>
-                    <Ionicons name="qr-code-outline" size={20} color="#2196F3" />
-                    <Text style={styles.featureText}>Scan QR</Text>
-                  </View>
-                  <View style={styles.featureRow}>
-                    <Ionicons name="person-add-outline" size={20} color="#2196F3" />
-                    <Text style={styles.featureText}>Add Patient</Text>
-                  </View>
-                  <View style={styles.featureRow}>
-                    <Ionicons name="clipboard-outline" size={20} color="#2196F3" />
-                    <Text style={styles.featureText}>View Dashboard</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            </Animated.View>
-
-            {/* Enquiry Option */}
-            <Animated.View style={{ transform: [{ scale: scaleAnimEnquiry }] }}>
-              <TouchableOpacity
-                style={[styles.optionCard, styles.enquiryCard]}
-                onPress={handleEnquiry}
-                activeOpacity={0.8}
-              >
-                <View style={styles.iconContainer}>
-                  <Ionicons name="help-circle" size={60} color="#FF9800" />
-                </View>
-                <Text style={styles.optionTitle}>Enquiry</Text>
-                <Text style={styles.optionDescription}>
-                  Submit enquiries, track status, and get information
-                </Text>
-                <View style={styles.featuresContainer}>
-                  <View style={styles.featureRow}>
-                    <Ionicons name="create-outline" size={20} color="#FF9800" />
-                    <Text style={styles.featureText}>New Enquiry</Text>
-                  </View>
-                  <View style={styles.featureRow}>
-                    <Ionicons name="list-outline" size={20} color="#FF9800" />
-                    <Text style={styles.featureText}>My Enquiries</Text>
-                  </View>
-                  <View style={styles.featureRow}>
-                    <Ionicons name="chatbubbles-outline" size={20} color="#FF9800" />
-                    <Text style={styles.featureText}>Support</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            </Animated.View>
+      {/* Profile Dropdown */}
+      {showProfileDropdown && (
+        <>
+          <TouchableOpacity 
+            style={styles.dropdownOverlay} 
+            onPress={closeProfileDropdown}
+            activeOpacity={1}
+          />
+          <View style={styles.profileDropdown}>
+            <TouchableOpacity 
+              style={styles.dropdownSignOutButton} 
+              onPress={handleSignOut}
+              disabled={isSigningOut}
+            >
+              {isSigningOut ? (
+                <ActivityIndicator size="small" color="#FF3B30" />
+              ) : (
+                <>
+                  <Ionicons name="log-out-outline" size={18} color="#FF3B30" />
+                  <Text style={styles.dropdownSignOutText}>Sign Out</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
-        </Animated.View>
-      </ScrollView>
+        </>
+      )}
+
+      <View style={styles.content}>
+        <Text style={styles.title}>Select Visit Type</Text>
+        <Text style={styles.description}>Choose how you'd like to proceed</Text>
+
+        {/* Options */}
+        <View style={styles.optionsContainer}>
+          {/* Visitor Option */}
+          <TouchableOpacity
+            style={[styles.optionCard, styles.visitorCard]}
+            onPress={handleVisitor}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="people" size={50} color="#4CAF50" />
+            <Text style={styles.optionTitle}>Visitor</Text>
+            <Text style={styles.optionDescription}>Check-in patients and manage visits</Text>
+          </TouchableOpacity>
+
+          {/* Enquiry Option */}
+          <TouchableOpacity
+            style={[styles.optionCard, styles.enquiryCard]}
+            onPress={handleEnquiry}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="help-circle" size={50} color="#2196F3" />
+            <Text style={styles.optionTitle}>Enquiry</Text>
+            <Text style={styles.optionDescription}>Submit and track enquiries</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -130,93 +113,120 @@ export default function UserType() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "white",
   },
-  scrollContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 20,
-  },
-  content: {
-    padding: 20,
-    minHeight: '100%',
-  },
-  header: {
-    alignItems: "center",
-    marginTop: 40,
-    marginBottom: 40,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#000",
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: "#666",
-    textAlign: "center",
-  },
-  optionsContainer: {
-    gap: 20,
-  },
-  optionCard: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 24,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
-    borderWidth: 2,
-  },
-  visitorCard: {
-    borderColor: "#2196F3",
-  },
-  enquiryCard: {
-    borderColor: "#FF9800",
-  },
-  iconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  profileButton: {
+    position: "absolute",
+    top: 60,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: "#f5f5f5",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    zIndex: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  optionTitle: {
+  dropdownOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 11,
+  },
+  profileDropdown: {
+    position: "absolute",
+    top: 120,
+    right: 20,
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    minWidth: 150,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 12,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  dropdownSignOutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+  },
+  dropdownSignOutText: {
+    fontSize: 16,
+    color: "#FF3B30",
+    fontWeight: "600",
+    marginLeft: 10,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#000",
     marginBottom: 8,
+    textAlign: "center",
   },
-  optionDescription: {
+  description: {
     fontSize: 16,
     color: "#666",
+    marginBottom: 32,
     textAlign: "center",
-    marginBottom: 20,
-    paddingHorizontal: 10,
   },
-  featuresContainer: {
+  optionsContainer: {
     width: "100%",
-    gap: 12,
+    gap: 20,
   },
-  featureRow: {
-    flexDirection: "row",
+  optionCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 28,
     alignItems: "center",
-    gap: 12,
-    paddingVertical: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 2,
   },
-  featureText: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "500",
+  visitorCard: {
+    borderColor: "#4CAF50",
+  },
+  enquiryCard: {
+    borderColor: "#2196F3",
+  },
+  optionTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#000",
+    marginTop: 12,
+  },
+  optionDescription: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 8,
+    textAlign: "center",
   },
 });
 

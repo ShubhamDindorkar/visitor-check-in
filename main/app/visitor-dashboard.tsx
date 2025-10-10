@@ -149,14 +149,6 @@ export default function Dashboard() {
       )}
 
       <View style={styles.content}>
-        {/* Welcome Message */}
-        <Text style={styles.welcomeTitle}>
-          Welcome, {userName}!
-        </Text>
-        <Text style={styles.subtitle}>
-          What would you like to do?
-        </Text>
-
         {/* Main Action Buttons */}
         <View style={styles.actionButtonsContainer}>
           {/* Scan QR Button - Primary Action */}
@@ -168,9 +160,6 @@ export default function Dashboard() {
               <Ionicons name="qr-code-outline" size={50} color="#4CAF50" />
             </View>
             <Text style={styles.actionButtonTitle}>Scan QR Code</Text>
-            <Text style={styles.actionButtonSubtitle}>
-              Quick check-in at reception
-            </Text>
           </TouchableOpacity>
 
           {/* Add Patient Button */}
@@ -182,21 +171,7 @@ export default function Dashboard() {
               <Ionicons name="person-add-outline" size={50} color="#2196F3" />
             </View>
             <Text style={styles.actionButtonTitle}>Add Patient</Text>
-            <Text style={styles.actionButtonSubtitle}>
-              Register a new patient visit
-            </Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Instructions */}
-        <View style={styles.instructionsBox}>
-          <Text style={styles.instructionsTitle}>💡 How it works:</Text>
-          <Text style={styles.instruction}>
-            1. <Text style={styles.bold}>Scan QR Code</Text> at reception desk for instant check-in
-          </Text>
-          <Text style={styles.instruction}>
-            2. Or use <Text style={styles.bold}>Add Patient</Text> to register a new visit
-          </Text>
         </View>
       </View>
     </SafeAreaView>
@@ -355,36 +330,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     color: "#000",
-    marginBottom: 8,
-  },
-  actionButtonSubtitle: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-  },
-  instructionsBox: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    marginTop: 30,
-    width: "100%",
-    borderLeftWidth: 4,
-    borderLeftColor: "#4CAF50",
-  },
-  instructionsTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 12,
-  },
-  instruction: {
-    fontSize: 14,
-    color: "#333",
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  bold: {
-    fontWeight: "bold",
   },
 });
 

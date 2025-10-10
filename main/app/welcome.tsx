@@ -17,6 +17,7 @@ export default function Welcome() {
   const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState<boolean>(false);
   const [isMobileFocused, setIsMobileFocused] = useState<boolean>(false);
+  const [visitTime, setVisitTime] = useState<string>("");
   
   useEffect(() => {
     // Handle manual sign-in data first
@@ -105,41 +106,38 @@ export default function Welcome() {
     }
   };
 
-  const handleContinue = async () => {
-    // Validate patient name
-    if (!patientName.trim()) {
-      Alert.alert("Required", "Please enter patient name");
-      return;
-    }
-    
-    // Validate mobile number
-    if (!mobileNumber.trim() || mobileNumber === "+91 ") {
-      Alert.alert("Required", "Please enter your mobile number");
-      return;
-    }
-    
-    const mobileRegex = /^\+91 \d{10}$/;
-    if (!mobileRegex.test(mobileNumber)) {
-      Alert.alert("Invalid", "Please enter a valid 10-digit mobile number");
-      return;
-    }
+  const handleCheckInPatients = () => {
+    // Navigate to patient selection/check-in screen
+    router.push("/select-patient");
+  };
 
+  const handleScanQR = () => {
+    // Navigate to QR scan screen
+    router.push("/scan");
+  };
+
+  const handleManageVisits = () => {
+    // Navigate to visitor dashboard to manage visits
+    router.push("/visitor-dashboard");
+  };
+
+  const saveProfileData = async () => {
     try {
       const auth = getAuth();
       const user = auth.currentUser;
       
       if (!user) {
-        Alert.alert("Error", "User not authenticated");
         return;
       }
 
-      // Save user profile with patient to Firestore users collection
+      // Save user profile to Firestore
       const profileData = {
         uid: user.uid,
         visitorName: fullName || userName || 'Visitor',
         visitorEmail: userEmail || user.email || '',
         visitorMobile: mobileNumber.trim(),
         defaultPatientName: patientName.trim(),
+        visitTime: visitTime,
         isProfileComplete: true,
       };
 
@@ -154,6 +152,7 @@ export default function Welcome() {
           visitorEmail: { stringValue: profileData.visitorEmail || '' },
           visitorMobile: { stringValue: profileData.visitorMobile },
           defaultPatientName: { stringValue: profileData.defaultPatientName },
+          visitTime: { stringValue: profileData.visitTime || '' },
           isProfileComplete: { booleanValue: true },
           createdAt: { timestampValue: now },
           updatedAt: { timestampValue: now }
@@ -203,6 +202,7 @@ export default function Welcome() {
             visitorEmail: { stringValue: profileData.visitorEmail || '' },
             visitorMobile: { stringValue: profileData.visitorMobile },
             defaultPatientName: { stringValue: profileData.defaultPatientName },
+            visitTime: { stringValue: profileData.visitTime || '' },
             isProfileComplete: { booleanValue: true },
             createdAt: { timestampValue: now },
             updatedAt: { timestampValue: now }
@@ -228,9 +228,6 @@ export default function Welcome() {
       }
 
       console.log("✅ User profile saved to Firestore:", profileData);
-
-      // Navigate to dashboard
-      router.replace({ pathname: '/user-type' } as any);
       
     } catch (error) {
       console.error("❌ Error saving profile:", error);
@@ -367,9 +364,6 @@ export default function Welcome() {
         <Text style={styles.welcomeTitle}>
           Welcome, {userName ? `${userName}!` : "..."}
         </Text>
-        <Text style={styles.subtitle}>
-          Complete your profile to get started
-        </Text>
         
         {/* Input Fields - Patient name and mobile number */}
         <View style={styles.inputContainer}>
@@ -406,27 +400,51 @@ export default function Welcome() {
             maxLength={14}
           />
           </View>
+
+          {/* Visit Time Input */}
+          <View style={styles.inputWrapper}>
+            <Text style={styles.inputLabel}>Select Visit Time</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter visit time (e.g., 10:00 AM)"
+              placeholderTextColor="#999"
+              value={visitTime}
+              onChangeText={setVisitTime}
+            />
+          </View>
         </View>
 
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>
-            ✨ One-time setup - This information will be saved for quick check-ins
-          </Text>
-        </View>
-      </View>
+        {/* Visitor Check-in Section */}
+        <View style={styles.checkInSection}>
+          <Text style={styles.sectionTitle}>Visitor Check-in</Text>
+          
+          <TouchableOpacity 
+            style={styles.checkInButton}
+            onPress={handleCheckInPatients}
+          >
+            <Ionicons name="person-add" size={20} color="#4CAF50" />
+            <Text style={styles.checkInButtonText}>Check-in Patients</Text>
+            <Ionicons name="chevron-forward" size={18} color="#8E8E93" />
+          </TouchableOpacity>
 
-      {/* Continue Button - Positioned at bottom */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={[
-            styles.continueButton,
-            (!patientName.trim() || !mobileNumber || mobileNumber === "+91 ") && styles.continueButtonDisabled
-          ]} 
-          onPress={handleContinue}
-          disabled={!patientName.trim() || !mobileNumber || mobileNumber === "+91 "}
-        >
-          <Text style={styles.buttonText}>Continue</Text>
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.checkInButton}
+            onPress={handleScanQR}
+          >
+            <Ionicons name="qr-code" size={20} color="#4CAF50" />
+            <Text style={styles.checkInButtonText}>Scan QR</Text>
+            <Ionicons name="chevron-forward" size={18} color="#8E8E93" />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.checkInButton}
+            onPress={handleManageVisits}
+          >
+            <Ionicons name="clipboard" size={20} color="#4CAF50" />
+            <Text style={styles.checkInButtonText}>Manage Visits</Text>
+            <Ionicons name="chevron-forward" size={18} color="#8E8E93" />
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -439,9 +457,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     zIndex: 2,
   },
   profileButton: {
@@ -550,90 +567,73 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   welcomeTitle: {
-    fontSize: 36,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#000",
     textAlign: "left",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#000",
-    marginBottom: 20,
-    textAlign: "center",
-    fontWeight: "400",
+    marginBottom: 12,
   },
   inputContainer: {
-    marginTop: 20,
+    marginTop: 8,
     width: "100%",
   },
   inputWrapper: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   inputLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
     color: "#2C2C2E",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   textInput: {
     width: "100%",
-    height: 60,
+    height: 48,
     borderWidth: 1,
     borderColor: "#E0E0E0",
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    fontSize: 18,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    fontSize: 15,
     backgroundColor: "white",
     color: "#000",
   },
-  infoBox: {
-    backgroundColor: "#E3F2FD",
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: "#2196F3",
+  checkInSection: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E0E0E0",
   },
-  infoText: {
-    fontSize: 14,
-    color: "#333",
-    lineHeight: 20,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2C2C2E",
+    marginBottom: 10,
   },
-  buttonContainer: {
-    position: "absolute",
-    bottom: 40,
-    left: 40,
-    right: 40,
-    alignItems: "center",
-    zIndex: 2,
-  },
-  continueButton: {
-    backgroundColor: "#4CAF50",
+  checkInButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 20,
-    paddingHorizontal: 40,
-    borderRadius: 12,
-    minWidth: 250,
+    backgroundColor: "white",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  continueButtonDisabled: {
-    backgroundColor: "#ccc",
     shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  buttonText: {
-    color: "white",
-    fontSize: 20,
+  checkInButtonText: {
+    flex: 1,
+    fontSize: 15,
     fontWeight: "600",
+    color: "#2C2C2E",
+    marginLeft: 10,
   },
   signOutButton: {
     backgroundColor: "black",
