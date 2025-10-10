@@ -72,8 +72,8 @@ export default function Login() {
       console.log('User signed in with Firebase:', firebaseUser);
       // Set success state to hide forms before navigation
       setAuthSuccess(true);
-      // Use replace to prevent back navigation and eliminate flickering
-      router.replace("/welcome");
+      // Go to user type selection first
+      router.replace("/user-type");
     } catch (error) {
       console.log('Sign in error:', error);
       setIsLoading(false);
@@ -131,8 +131,8 @@ export default function Login() {
       console.log('User created successfully:', userCredential.user);
       // Set success state to hide forms before navigation
       setAuthSuccess(true);
-      // Use replace to prevent back navigation and eliminate flickering
-      router.replace("/welcome");
+      // Go to user type selection first
+      router.replace("/user-type");
     } catch (error: any) {
       console.log('Sign up error:', error);
       setIsLoading(false);
@@ -165,8 +165,8 @@ export default function Login() {
       console.log('User signed in successfully:', userCredential.user);
       // Set success state to hide forms before navigation
       setAuthSuccess(true);
-      // Use replace to prevent back navigation and eliminate flickering
-      router.replace("/welcome");
+      // Go to user type selection first
+      router.replace("/user-type");
     } catch (error: any) {
       console.log('Sign in error:', error);
       setIsLoading(false);

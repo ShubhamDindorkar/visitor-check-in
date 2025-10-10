@@ -18,12 +18,10 @@ export default function Welcome() {
   const [showProfileDropdown, setShowProfileDropdown] = useState<boolean>(false);
   const [isMobileFocused, setIsMobileFocused] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [isCheckingProfile, setIsCheckingProfile] = useState<boolean>(true);
+  const [isCheckingProfile, setIsCheckingProfile] = useState<boolean>(false);
   const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
   
-  useEffect(() => {
-    checkProfileStatus();
-  }, []);
+  // Removed auto profile check - users should only reach this screen from user-type selection
 
   useEffect(() => {
     // Handle manual sign-in data first
@@ -48,65 +46,7 @@ export default function Welcome() {
     }
   }, [returnedMobileNumber, manualSignIn, manualFullName, manualEmail, manualPhoneNumber]);
 
-  const checkProfileStatus = async () => {
-    try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      
-      if (!user) {
-        setIsCheckingProfile(false);
-        return;
-      }
-
-      // Check if user has completed their profile
-      if (Platform.OS === 'web') {
-        const token = await user.getIdToken();
-        const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
-        
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const docData = await response.json();
-          const profileComplete = docData.fields?.isProfileComplete?.booleanValue === true;
-          
-          if (profileComplete) {
-            // Profile is complete, redirect immediately
-            router.replace('/user-type');
-            return;
-          }
-        }
-      } else {
-        try {
-          if (firestore && typeof firestore === 'function') {
-            const userDoc = await firestore()
-              .collection('users')
-              .doc(user.uid)
-              .get();
-            
-            const userData = userDoc.data();
-            const profileComplete = userData?.isProfileComplete === true;
-            
-            if (profileComplete) {
-              // Profile is complete, redirect immediately
-              router.replace('/user-type');
-              return;
-            }
-          }
-        } catch (error) {
-          console.warn('Error checking profile:', error);
-        }
-      }
-      
-      setIsCheckingProfile(false);
-    } catch (error) {
-      console.error('Error checking profile status:', error);
-      setIsCheckingProfile(false);
-    }
-  };
+  // Profile check removed - users only reach this screen after selecting Visitor from user-type
 
   const fetchUserName = async () => {
     try {
@@ -348,7 +288,7 @@ export default function Welcome() {
         [
           {
             text: "OK",
-            onPress: () => router.replace("/user-type")
+            onPress: () => router.replace("/visitor-dashboard")
           }
         ]
       );
@@ -360,17 +300,7 @@ export default function Welcome() {
     }
   };
 
-  // Show loading while checking profile
-  if (isCheckingProfile) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="white" />
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // No need to show loading - users reach this screen directly from user-type selection
 
   return (
     <SafeAreaView style={styles.container}>

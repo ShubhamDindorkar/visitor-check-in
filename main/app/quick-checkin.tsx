@@ -133,7 +133,7 @@ export default function QuickCheckIn() {
         [
           {
             text: "Manual Check-in",
-            onPress: () => router.replace("/welcome")
+            onPress: () => router.replace("/user-type")
           }
         ]
       );

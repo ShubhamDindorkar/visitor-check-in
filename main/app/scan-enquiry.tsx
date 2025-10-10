@@ -96,7 +96,7 @@ export default function ScanEnquiryScreen() {
         Alert.alert(
           "Profile Incomplete",
           "Please complete your profile first",
-          [{ text: "OK", onPress: () => router.replace("/welcome") }]
+          [{ text: "OK", onPress: () => router.replace("/user-type") }]
         );
         return;
       }

@@ -204,15 +204,7 @@ export default function RootLayout() {
 
     if (user && (isOnLogin || isOnIndex)) {
       // User is signed in but on login/index screen
-      if (isProfileComplete) {
-        // Profile is complete, go to user type selection
-        router.replace('/user-type');
-      } else {
-        // Profile not complete, go to welcome for setup
-        router.replace('/welcome');
-      }
-    } else if (user && isOnWelcome && isProfileComplete) {
-      // User is on welcome but profile is already complete, redirect to user type selection
+      // Always go to user type selection first
       router.replace('/user-type');
     } else if (!user && isOnProtectedScreen) {
       // User is not signed in but trying to access protected screen, redirect to index

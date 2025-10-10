@@ -1,20 +1,75 @@
-import { Text, View, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { getAuth, signOut as firebaseSignOut } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import firestore from '@react-native-firebase/firestore';
 
 export default function UserType() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isCheckingProfile, setIsCheckingProfile] = useState(false);
 
-  const handleVisitor = () => {
-    router.push("/visitor-dashboard");
+  const handleVisitor = async () => {
+    // Check if user has completed their profile
+    setIsCheckingProfile(true);
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user) {
+        router.replace('/');
+        return;
+      }
+
+      let profileComplete = false;
+
+      // Check profile completion status
+      if (Platform.OS === 'web') {
+        const token = await user.getIdToken();
+        const url = `https://firestore.googleapis.com/v1/projects/visitor-management-241ea/databases/(default)/documents/users/${user.uid}`;
+        
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const docData = await response.json();
+          profileComplete = docData.fields?.isProfileComplete?.booleanValue === true;
+        }
+      } else {
+        try {
+          if (firestore && typeof firestore === 'function') {
+            const userDoc = await firestore().collection('users').doc(user.uid).get();
+            const userData = userDoc.data();
+            profileComplete = userData?.isProfileComplete === true;
+          }
+        } catch (error) {
+          console.warn('Error checking profile:', error);
+        }
+      }
+
+      // If profile is complete, go to visitor dashboard
+      // Otherwise, go to welcome screen to complete profile
+      if (profileComplete) {
+        router.push("/visitor-dashboard");
+      } else {
+        // Incomplete profile; go to welcome to finish setup
+        router.push("/welcome");
+      }
+    } catch (error) {
+      console.error('Error checking profile:', error);
+      // Default to welcome screen if there's an error
+      router.push("/welcome");
+    } finally {
+      setIsCheckingProfile(false);
+    }
   };
 
   const handleEnquiry = () => {
+    // Enquiry users don't need to complete visitor profile
     router.push("/enquiry-dashboard");
   };
 
@@ -88,10 +143,20 @@ export default function UserType() {
             style={[styles.optionCard, styles.visitorCard]}
             onPress={handleVisitor}
             activeOpacity={0.8}
+            disabled={isCheckingProfile}
           >
-            <Ionicons name="people" size={50} color="#1C4B46" />
-            <Text style={styles.optionTitle}>Visitor</Text>
-            <Text style={styles.optionDescription}>Check-in patients and manage visits</Text>
+            {isCheckingProfile ? (
+              <>
+                <ActivityIndicator size="large" color="#1C4B46" />
+                <Text style={[styles.optionTitle, { marginTop: 12 }]}>Loading...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="people" size={50} color="#1C4B46" />
+                <Text style={styles.optionTitle}>Visitor</Text>
+                <Text style={styles.optionDescription}>Check-in patients and manage visits</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           {/* Enquiry Option */}
