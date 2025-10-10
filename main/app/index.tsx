@@ -1,12 +1,18 @@
-import { Text, View, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { View, StyleSheet, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import GoogleAuth from "../src/components/auth/google-auth";
+import { useEffect } from "react";
 
 export default function Home() {
-  const handleContinue = () => {
-    router.push("/login");
-  };
+  useEffect(() => {
+    // Automatically navigate to login screen after 1.5 seconds
+    const timer = setTimeout(() => {
+      router.push("/login");
+    }, 1500);
+
+    // Cleanup timer on component unmount
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -17,18 +23,6 @@ export default function Home() {
           style={styles.logoImage}
           resizeMode="contain"
         />
-      </View>
-
-      {/* Google Auth */}
-      {/* <View style={styles.authContainer}>
-        <GoogleAuth />
-      </View> */}
-
-      {/* Continue Button - Positioned at bottom */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-          <Text style={styles.buttonText}>Continue</Text>
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -43,44 +37,11 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   iconContainer: {
-    marginBottom: 30,
     alignItems: "center",
     justifyContent: "center",
   },
   logoImage: {
     width: 300,
     height: 150,
-  },
-  authContainer: {
-    marginVertical: 20,
-    width: "100%",
-    alignItems: "center",
-  },
-  buttonContainer: {
-    position: "absolute",
-    bottom: 40,
-    left: 40,
-    right: 40,
-    alignItems: "center",
-  },
-  continueButton: {
-    backgroundColor: "white",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 20,
-    paddingHorizontal: 40,
-    borderRadius: 12,
-    minWidth: 250,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  buttonText: {
-    color: "black",
-    fontSize: 24,
-    fontWeight: "600",
   },
 });
