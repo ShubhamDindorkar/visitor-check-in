@@ -338,7 +338,7 @@ export default function Login() {
             </View>
 
             {/* Title */}
-            <Text style={styles.title}>Hello Again,</Text>
+            <Text style={styles.title}>Hello Again!</Text>
             <Text style={styles.title}>Let's Get You</Text>
             <Text style={styles.title}>Signed In</Text>
 
