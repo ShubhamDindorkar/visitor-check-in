@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "8ece520e-e077-43f8-8252-3e5a9fd15027"
+      }
+    },
+    "android": {
+      "package": "com.shubhamdindorkar.visitorcheckin"
+    }
+  }
+}

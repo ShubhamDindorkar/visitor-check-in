@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "234537435099",
+    "firebase_url": "https://visitor-management-241ea-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "visitor-management-241ea",
     "storage_bucket": "visitor-management-241ea.firebasestorage.app"
   },
@@ -19,6 +20,14 @@
           "android_info": {
             "package_name": "com.visitormanagement",
             "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "234537435099-nj4nmfhdna0vegqlnq3fugjto94ummmi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.visitormanagement",
+            "certificate_hash": "f959fdebaf9ad3463c7f386795239c44a036b80b"
           }
         },
         {

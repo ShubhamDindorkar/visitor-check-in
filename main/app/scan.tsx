@@ -44,6 +44,12 @@ export default function ScanScreen() {
     if (permission && !permission.granted && permission.canAskAgain) {
       requestPermission();
     }
+    
+    // Force request permission on mount if not granted
+    if (permission && !permission.granted) {
+      console.log("Camera permission not granted, requesting...");
+      requestPermission();
+    }
   }, [permission, requestPermission]);
 
   const onBarCodeScanned = useCallback(async ({ data }: any) => {
@@ -53,11 +59,24 @@ export default function ScanScreen() {
     const qrData = String(data ?? "");
     console.log("QR Code scanned:", qrData);
     
-    // Check if this is the reception check-in QR
+    // Check if this is the reception check-in QR with deep link
     if (qrData.includes("main://quick-checkin") || qrData.includes("quick-checkin")) {
       // Navigate to quick check-in page - it will handle fetching saved patient info
       router.push("/quick-checkin");
       return;
+    }
+    
+    // Try to parse as JSON (for personal visitor QR codes)
+    try {
+      const parsedData = JSON.parse(qrData);
+      if (parsedData.visitorMobile && parsedData.patientName) {
+        // This is a personal visitor QR code - use quick check-in
+        console.log("Parsed visitor QR data:", parsedData);
+        router.push("/quick-checkin");
+        return;
+      }
+    } catch (e) {
+      // Not JSON, continue to fallback
     }
     
     // For any other QR code, also use quick check-in
@@ -103,6 +122,12 @@ export default function ScanScreen() {
           onPress={requestPermission}
         >
           <Text style={styles.permissionButtonText}>Grant Permission</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.permissionButton, { backgroundColor: '#666', marginTop: 10 }]} 
+          onPress={handleBack}
+        >
+          <Text style={styles.permissionButtonText}>Go Back</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );

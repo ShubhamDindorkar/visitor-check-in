@@ -1,0 +1,39 @@
+name: EAS Build
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        type: choice
+        description: Platform to build for
+        options:
+          - android
+          - ios
+          - all
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build on EAS
+        run: |
+          eas build --platform ${{ github.event.inputs.platform }} --profile preview --non-interactive
+

@@ -1,13 +1,15 @@
 {
   "expo": {
-    "name": "main",
-    "slug": "main",
+    "name": "Visitor Check-In",
+    "slug": "visitor-check-in",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "main",
+    "scheme": "visitormanagement",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "description": "Professional visitor management system with QR code check-in functionality. Streamline visitor registration, tracking, and security for your organization.",
+    "primaryColor": "#E6F4FE",
     "ios": {
       "supportsTablet": true,
       "googleServicesFile": "./GoogleService-Info.plist",
@@ -23,7 +25,12 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "googleServicesFile": "./google-services.json",
-      "package": "com.visitormanagement"
+      "package": "com.visitormanagement",
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
+      "privacyPolicy": "https://your-domain.com/privacy-policy",
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.visitormanagement"
     },
     "web": {
       "output": "static",
@@ -37,18 +44,6 @@
           "cameraPermission": "Allow camera access to scan QR codes.",
           "microphonePermission": false,
           "recordAudioAndroid": false
-        }
-      ],
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
         }
       ],
       "@react-native-firebase/app",
@@ -65,14 +60,34 @@
           "ios": {
             "useFrameworks": "static",
             "useModularHeaders": true
+          },
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0",
+            "minSdkVersion": 24
           }
         }
       ],
       "expo-web-browser"
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    }
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "847fccff-a8c4-44a3-b00d-fe31fc84c05f"
+      }
+    },
+    "hooks": {
+      "postPublish": []
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "owner": "webagency"
   }
 }

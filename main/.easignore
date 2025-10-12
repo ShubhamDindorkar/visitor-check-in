@@ -1,0 +1,11 @@
+.expo/**/*
+.expo-shared/**/*
+android/**/*
+ios/**/*
+*.log
+.git/**/*
+.vscode/**/*
+.idea/**/*
+app-example/**/*
+node_modules/.cache/**/*
+

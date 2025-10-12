@@ -78,25 +78,14 @@ export default function QuickCheckIn() {
         }
       }
 
-      // If no patient info found, ask user to add patient first
+      // If no patient info found, use default values and let user complete later
       if (!patientName || !visitorMobile) {
-        Alert.alert(
-          "No Patient Information",
-          "Please add a patient first before checking in.",
-          [
-            {
-              text: "Add Patient",
-              onPress: () => router.replace("/add-patient")
-            },
-            {
-              text: "Go to Dashboard",
-              onPress: () => router.replace("/visitor-dashboard"),
-              style: "cancel"
-            }
-          ]
-        );
-        setIsLoading(false);
-        return;
+        console.log("No saved patient info found, using defaults");
+        patientName = patientName || "Not specified";
+        visitorMobile = visitorMobile || "Not provided";
+        
+        // Still proceed with check-in but with default values
+        setStatus("Creating check-in with available information...");
       }
 
       setStatus("Creating your check-in entry...");
@@ -127,6 +116,43 @@ export default function QuickCheckIn() {
 
     } catch (error) {
       console.error("❌ Quick check-in error:", error);
+      
+      // Try to get basic user info even if Firestore fails
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        
+        if (user) {
+          const userDisplayName = user.displayName || 'Visitor';
+          const userEmail = user.email || '';
+          
+          // Create a basic check-in entry with minimal info
+          const ts = firestore.FieldValue.serverTimestamp();
+          const docRef = await firestore().collection('visits').add({
+            visitorName: userDisplayName,
+            visitorMobile: userEmail || "Not provided",
+            patientName: "Quick Check-in",
+            status: 'checked_in',
+            checkInTime: ts,
+            createdAt: ts,
+            date: ts,
+            createdBy: user.uid,
+            _quickCheckIn: true,
+            _fallback: true // Flag to indicate this was a fallback check-in
+          });
+
+          console.log("✅ Fallback check-in successful:", docRef.id);
+          setStatus("Success! Redirecting...");
+
+          setTimeout(() => {
+            router.push(`/entry?visitId=${docRef.id}&mobileNumber=${encodeURIComponent(userEmail || "Not provided")}&visitorName=${encodeURIComponent(userDisplayName)}&patientName=Quick Check-in&fromQuickCheckin=true`);
+          }, 1000);
+          return;
+        }
+      } catch (fallbackError) {
+        console.error("❌ Fallback check-in also failed:", fallbackError);
+      }
+      
       Alert.alert(
         "Check-in Error",
         "Unable to complete quick check-in. Please use manual check-in.",

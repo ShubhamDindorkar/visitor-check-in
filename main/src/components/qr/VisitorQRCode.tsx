@@ -19,12 +19,9 @@ export default function VisitorQRCode({
   patientName = "",
   size = 200 
 }: VisitorQRCodeProps) {
-  // Create JSON data matching the format expected by scan.tsx
-  const qrData = JSON.stringify({
-    visitorName,
-    visitorMobile,
-    patientName
-  });
+  // Use deep link format for consistent quick check-in
+  // This matches the ReceptionQRCode format
+  const qrData = "main://quick-checkin";
 
   return (
     <View style={styles.container}>
